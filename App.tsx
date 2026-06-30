@@ -1,10 +1,11 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
-import { defaultRequest, estimateRequest, guides } from './src/data/mock';
+import { defaultRequest, estimateRequest } from './src/data/mock';
+import { API_BASE, createWalkRequest, getSessionStatus, getWalkRequest, health, MarketplaceRequest, sendSessionMessage, SessionMessage, startSession } from './src/api';
 import { ConfirmedScreen } from './src/screens/ConfirmedScreen';
 import { LiveWalkScreen } from './src/screens/LiveWalkScreen';
 import { MatchingScreen } from './src/screens/MatchingScreen';
@@ -12,7 +13,7 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { RequestScreen } from './src/screens/RequestScreen';
 import { ReviewScreen } from './src/screens/ReviewScreen';
 import { SummaryScreen } from './src/screens/SummaryScreen';
-import { Guide, Screen, WalkRequest } from './src/types';
+import { Screen, WalkRequest } from './src/types';
 
 const screenOrder: Screen[] = ['onboarding', 'request', 'review', 'matching', 'confirmed', 'live', 'summary'];
 
@@ -29,7 +30,11 @@ const screenLabels: Record<Screen, string> = {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [request, setRequest] = useState<WalkRequest>(defaultRequest);
-  const [guide, setGuide] = useState<Guide | undefined>(undefined);
+  const [remoteRequest, setRemoteRequest] = useState<MarketplaceRequest | undefined>();
+  const [apiOnline, setApiOnline] = useState(false);
+  const [apiNote, setApiNote] = useState('Checking backend…');
+  const [busy, setBusy] = useState(false);
+  const [messages, setMessages] = useState<SessionMessage[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const estimate = useMemo(() => estimateRequest(request), [request]);
 
@@ -42,14 +47,85 @@ export default function App() {
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false }));
   };
 
+  useEffect(() => {
+    let active = true;
+    const poll = async () => {
+      try {
+        await health();
+        if (!active) return;
+        setApiOnline(true);
+        setApiNote('Backend connected');
+        if (remoteRequest?.id) {
+          const data = await getWalkRequest(remoteRequest.id);
+          if (!active) return;
+          setRemoteRequest(data.request);
+          if ((data.request.status === 'accepted' || data.request.status === 'live') && screen === 'matching') {
+            navigateTo('confirmed');
+          }
+          if (data.request.sessionId) {
+            try {
+              const session = await getSessionStatus(data.request.sessionId);
+              if (active) setMessages(session.messages);
+            } catch {}
+          }
+        }
+      } catch {
+        if (!active) return;
+        setApiOnline(false);
+        setApiNote('Backend reconnecting');
+      }
+    };
+    poll();
+    const timer = setInterval(poll, 2000);
+    return () => { active = false; clearInterval(timer); };
+  }, [remoteRequest?.id, screen]);
+
   const goPrevious = () => {
-    if (!isFirstScreen) {
-      navigateTo(screenOrder[currentIndex - 1]);
-    }
+    if (!isFirstScreen) navigateTo(screenOrder[currentIndex - 1]);
   };
 
   const goNext = () => {
     navigateTo(isLastScreen ? 'request' : screenOrder[currentIndex + 1]);
+  };
+
+  const submitRequest = async () => {
+    setBusy(true);
+    setApiNote('Sending request to guide marketplace…');
+    try {
+      const data = await createWalkRequest(request);
+      setRemoteRequest(data.request);
+      setApiOnline(true);
+      setApiNote('Request live for guides');
+      navigateTo('matching');
+    } catch {
+      setApiOnline(false);
+      setApiNote('Could not send request yet');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const joinLive = async () => {
+    if (remoteRequest?.sessionId) {
+      try {
+        const data = await startSession(remoteRequest.sessionId);
+        setMessages(data.messages);
+      } catch {}
+    }
+    navigateTo('live');
+  };
+
+  const sendTravelerMessage = async (text: string) => {
+    if (!remoteRequest?.sessionId) return;
+    await sendSessionMessage(remoteRequest.sessionId, text);
+    const data = await getSessionStatus(remoteRequest.sessionId);
+    setMessages(data.messages);
+  };
+
+  const resetLocal = () => {
+    setRemoteRequest(undefined);
+    setMessages([]);
+    navigateTo('request');
   };
 
   return (
@@ -58,72 +134,38 @@ export default function App() {
         <StatusBar style="dark" />
         <View style={styles.appShell}>
           <View style={styles.appHeader}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Go to Start page"
-              hitSlop={10}
-              onPress={() => navigateTo('onboarding')}
-              style={({ pressed }) => [styles.logoMini, pressed && styles.pressed]}
-            >
+            <Pressable accessibilityRole="button" accessibilityLabel="Go to Start page" hitSlop={10} onPress={() => navigateTo('onboarding')} style={({ pressed }) => [styles.logoMini, pressed && styles.pressed]}>
               <Ionicons name="navigate" size={16} color={colors.white} />
             </Pressable>
             <View style={styles.headerCopy}>
               <Text style={styles.headerTitle}>LiveWalk Traveler MVP</Text>
-              <Text style={styles.headerSub}>Android-ready Expo prototype</Text>
+              <Text style={styles.headerSub}>Shared backend booking cycle</Text>
             </View>
-            <Text style={styles.stepCount}>{currentIndex + 1}/{screenOrder.length}</Text>
+            <View style={[styles.statusPill, apiOnline ? styles.statusPillOnline : styles.statusPillOffline]}>
+              <View style={[styles.statusDot, apiOnline && styles.statusDotOnline]} />
+              <Text style={styles.statusText}>{apiOnline ? 'Live' : 'Sync'}</Text>
+            </View>
           </View>
+          <Text style={styles.backendLine} numberOfLines={1}>{apiNote} • {API_BASE.replace('https://', '')}</Text>
           <View style={styles.stepper}>
             {screenOrder.map((item, index) => {
               const active = item === screen;
               return (
-                <Pressable
-                  key={item}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`Open ${screenLabels[item]} step`}
-                  hitSlop={6}
-                  onPress={() => navigateTo(item)}
-                  style={({ pressed }) => [styles.stepItem, pressed && styles.stepItemPressed]}
-                >
+                <Pressable key={item} accessibilityRole="tab" accessibilityState={{ selected: active }} accessibilityLabel={`Open ${screenLabels[item]} step`} hitSlop={6} onPress={() => navigateTo(item)} style={({ pressed }) => [styles.stepItem, pressed && styles.stepItemPressed]}>
                   <View style={[styles.stepDot, index <= currentIndex && styles.stepDotActive]} />
-                  <Text style={[styles.stepLabel, active && styles.stepLabelActive]} numberOfLines={1}>
-                    {screenLabels[item]}
-                  </Text>
+                  <Text style={[styles.stepLabel, active && styles.stepLabelActive]} numberOfLines={1}>{screenLabels[item]}</Text>
                 </Pressable>
               );
             })}
           </View>
-          <ScrollView
-            ref={scrollRef}
-            style={styles.scroll}
-            contentContainerStyle={styles.content}
-            contentInsetAdjustmentBehavior="automatic"
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-            showsVerticalScrollIndicator
-          >
+          <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator>
             {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
             {screen === 'request' ? <RequestScreen request={request} onChange={setRequest} onReview={() => navigateTo('review')} /> : null}
-            {screen === 'review' ? (
-              <ReviewScreen request={request} estimate={estimate} onBack={() => navigateTo('request')} onFindGuide={() => navigateTo('matching')} />
-            ) : null}
-            {screen === 'matching' ? (
-              <MatchingScreen
-                guides={guides}
-                onSelect={(selectedGuide) => {
-                  setGuide(selectedGuide);
-                  navigateTo('confirmed');
-                }}
-                onPending={() => {
-                  setGuide(undefined);
-                  navigateTo('confirmed');
-                }}
-              />
-            ) : null}
-            {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} guide={guide} onJoin={() => navigateTo('live')} /> : null}
-            {screen === 'live' ? <LiveWalkScreen onEnd={() => navigateTo('summary')} /> : null}
-            {screen === 'summary' ? <SummaryScreen onNewWalk={() => navigateTo('request')} /> : null}
+            {screen === 'review' ? <ReviewScreen request={request} estimate={estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
+            {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={async () => remoteRequest && setRemoteRequest((await getWalkRequest(remoteRequest.id)).request)} onReset={resetLocal} /> : null}
+            {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} remoteRequest={remoteRequest} onJoin={joinLive} /> : null}
+            {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
+            {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
           </ScrollView>
           <SafeAreaView style={styles.bottomSafeArea} edges={['bottom']}>
             <View style={styles.bottomNav}>
@@ -140,13 +182,19 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.cream },
   appShell: { flex: 1, backgroundColor: colors.cream },
-  appHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 12 },
+  appHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 6 },
   logoMini: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.68 },
   headerCopy: { flex: 1, minWidth: 0 },
   headerTitle: { color: colors.ink, fontWeight: '900', fontSize: 16 },
   headerSub: { color: colors.muted, fontWeight: '700', fontSize: 12, marginTop: 1 },
-  stepCount: { color: colors.gold, fontWeight: '900' },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1 },
+  statusPillOnline: { backgroundColor: '#EAF7F2', borderColor: '#BDE8DC' },
+  statusPillOffline: { backgroundColor: '#FFF8EA', borderColor: '#F2DCA8' },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },
+  statusDotOnline: { backgroundColor: colors.green },
+  statusText: { color: colors.ink, fontWeight: '900', fontSize: 11 },
+  backendLine: { color: colors.muted, fontSize: 11, fontWeight: '700', paddingHorizontal: 18, paddingBottom: 7 },
   stepper: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 8, gap: 3 },
   stepItem: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 12 },
   stepItemPressed: { backgroundColor: 'rgba(6,24,38,0.06)' },
@@ -157,15 +205,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 12, paddingBottom: 28 },
   bottomSafeArea: { backgroundColor: colors.cream },
-  bottomNav: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(6,24,38,0.08)',
-    backgroundColor: 'rgba(251,247,239,0.98)',
-  },
+  bottomNav: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, borderTopWidth: 1, borderTopColor: 'rgba(6,24,38,0.08)', backgroundColor: 'rgba(251,247,239,0.98)' },
   navButton: { flex: 1 },
 });

@@ -1,56 +1,54 @@
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Header, colors } from '../components/Primitives';
-import { Guide } from '../types';
+import { Button, Card, Header, Pill, colors } from '../components/Primitives';
+import { MarketplaceRequest } from '../api';
+import { WalkRequest } from '../types';
 
-export function MatchingScreen({ guides, onSelect, onPending }: { guides: Guide[]; onSelect: (guide: Guide) => void; onPending: () => void }) {
-  const [selectedId, setSelectedId] = useState(guides[0]?.id);
-  const selected = useMemo(() => guides.find((guide) => guide.id === selectedId) ?? guides[0], [guides, selectedId]);
-
+export function MatchingScreen({
+  request,
+  remoteRequest,
+  onCheck,
+  onReset,
+}: {
+  request: WalkRequest;
+  remoteRequest?: MarketplaceRequest;
+  onCheck: () => void;
+  onReset: () => void;
+}) {
+  const accepted = remoteRequest?.status === 'accepted' || remoteRequest?.status === 'live';
   return (
     <View>
       <Header
-        kicker="Guide match"
-        title="Choose a local or let the request go pending."
-        body="In the real product, nearby guides receive this request and can accept or decline."
+        kicker="Live marketplace"
+        title={accepted ? 'A guide accepted your walk.' : 'Your request is visible to guides.'}
+        body="The guide APK polls the same backend every few seconds. Accept it there and this screen moves to confirmed automatically."
       />
       <View style={styles.pendingCard}>
         <View style={styles.radar}>
           <View style={styles.ringOuter} />
           <View style={styles.ringInner} />
-          <Ionicons name="radio" size={24} color={colors.white} />
+          <Ionicons name={accepted ? 'checkmark' : 'radio'} size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.pendingTitle}>2 matching guides found</Text>
-          <Text style={styles.pendingBody}>Mocked availability based on language, location, and requested slot.</Text>
+          <Text style={styles.pendingTitle}>{accepted ? `${remoteRequest?.guide?.name} accepted` : 'Waiting for guide response'}</Text>
+          <Text style={styles.pendingBody}>Status: {remoteRequest?.status ?? 'not sent'} {remoteRequest?.id ? `• ${remoteRequest.id}` : ''}</Text>
         </View>
       </View>
-      <View style={styles.list}>
-        {guides.map((guide) => {
-          const active = guide.id === selectedId;
-          return (
-            <TouchableOpacity key={guide.id} activeOpacity={0.85} onPress={() => setSelectedId(guide.id)}>
-              <Card style={[styles.guideCard, active && styles.guideCardActive]}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{guide.avatar}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.guideTop}>
-                    <Text style={styles.guideName}>{guide.name}</Text>
-                    <Text style={styles.rating}>★ {guide.rating}</Text>
-                  </View>
-                  <Text style={styles.guideMeta}>{guide.city} • {guide.walks} walks</Text>
-                  <Text style={styles.specialty}>{guide.specialty}</Text>
-                  <Text style={styles.eta}>{guide.eta}</Text>
-                </View>
-              </Card>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      <Button label="Request selected guide" icon="checkmark-circle" onPress={() => onSelect(selected)} />
-      <Button label="Skip and keep booking pending" variant="ghost" onPress={onPending} style={{ marginTop: 8 }} />
+      <Card style={styles.requestCard}>
+        <Text style={styles.sectionTitle}>Shared request</Text>
+        <Text style={styles.route}>{remoteRequest?.route ?? `${request.start} → ${request.destination}`}</Text>
+        <View style={styles.pills}>
+          <Pill label={request.language} selected />
+          {request.interests.slice(0, 4).map((interest) => <Pill key={interest} label={interest} />)}
+        </View>
+        <View style={styles.syncRow}>
+          <Ionicons name="sync" size={18} color={colors.green} />
+          <Text style={styles.syncText}>Polling the backend every 2 seconds for near real-time booking updates.</Text>
+        </View>
+      </Card>
+      <Button label="Check now" icon="refresh" onPress={onCheck} style={{ marginTop: 18 }} />
+      <Button label="Start over locally" variant="ghost" onPress={onReset} style={{ marginTop: 8 }} />
     </View>
   );
 }
@@ -61,16 +59,11 @@ const styles = StyleSheet.create({
   ringOuter: { position: 'absolute', width: 84, height: 84, borderRadius: 42, borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)' },
   ringInner: { position: 'absolute', width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.36)' },
   pendingTitle: { color: colors.white, fontSize: 18, fontWeight: '900' },
-  pendingBody: { color: 'rgba(255,255,255,0.72)', marginTop: 4, lineHeight: 19 },
-  list: { gap: 12, marginBottom: 18 },
-  guideCard: { flexDirection: 'row', gap: 14, borderWidth: 2, borderColor: 'transparent' },
-  guideCardActive: { borderColor: colors.gold },
-  avatar: { width: 54, height: 54, borderRadius: 20, backgroundColor: colors.sand, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: colors.ink, fontWeight: '900' },
-  guideTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  guideName: { color: colors.ink, fontSize: 17, fontWeight: '900', flex: 1 },
-  rating: { color: colors.gold, fontWeight: '900' },
-  guideMeta: { color: colors.muted, fontWeight: '700', marginTop: 2 },
-  specialty: { color: colors.ink, marginTop: 8, lineHeight: 20 },
-  eta: { color: colors.green, marginTop: 8, fontWeight: '900' },
+  pendingBody: { color: 'rgba(255,255,255,0.72)', marginTop: 4, lineHeight: 19, fontWeight: '700' },
+  requestCard: { gap: 10 },
+  sectionTitle: { color: colors.ink, fontWeight: '900', fontSize: 18 },
+  route: { color: colors.ink, fontWeight: '900', fontSize: 17, lineHeight: 24 },
+  pills: { flexDirection: 'row', flexWrap: 'wrap' },
+  syncRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: '#EAF7F2', borderRadius: 16, padding: 12 },
+  syncText: { color: colors.ink, flex: 1, fontWeight: '800', lineHeight: 20 },
 });

@@ -9,11 +9,13 @@ export function ReviewScreen({
   estimate,
   onBack,
   onFindGuide,
+  busy = false,
 }: {
   request: WalkRequest;
   estimate: Estimate;
   onBack: () => void;
   onFindGuide: () => void;
+  busy?: boolean;
 }) {
   return (
     <View>
@@ -51,7 +53,7 @@ export function ReviewScreen({
       </Card>
       <View style={styles.actions}>
         <Button label="Edit" variant="secondary" onPress={onBack} style={{ flex: 1 }} />
-        <Button label="Find guides" icon="search" onPress={onFindGuide} style={{ flex: 1 }} />
+        <Button label={busy ? "Sending…" : "Send to guides"} icon="cloud-upload" onPress={onFindGuide} disabled={busy} style={{ flex: 1 }} />
       </View>
     </View>
   );

@@ -36,3 +36,36 @@ export type Estimate = {
   guideFee: number;
   total: number;
 };
+
+
+export type MarketplaceGuide = {
+  id: string;
+  name: string;
+  avatar?: string;
+};
+
+export type MarketplaceRequest = {
+  id: string;
+  travelerName: string;
+  origin: string;
+  destination: string;
+  route: string;
+  scheduledTime: string;
+  duration: string;
+  language: string;
+  interests: string[];
+  status: 'pending' | 'accepted' | 'declined' | 'live';
+  guide: MarketplaceGuide | null;
+  sessionId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SessionMessage = {
+  id: string;
+  sessionId: string;
+  senderRole: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+};

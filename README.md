@@ -94,3 +94,21 @@ src/screens/*                    Traveler flow screens
 FLOW.md                          Product flow summary
 README.md                        Setup, run, mocked scope, next integrations
 ```
+
+## Shared backend integration
+
+This build points at the published demo backend:
+
+```text
+https://rendezvous-livewalk-api.webpeter.com
+```
+
+Functional vertical slice now included:
+1. Traveler creates a walk request with route, time, language, and interests.
+2. Guide APK sees the pending request from the shared backend.
+3. Guide accepts or declines it.
+4. Traveler APK polls and updates to confirmed when accepted.
+5. Both sides enter a shared live session state.
+6. Both sides can post/read basic session messages.
+
+For a clean demo, use `POST /api/demo/reset` on the backend or the reset button in the rebuilt traveler APK.

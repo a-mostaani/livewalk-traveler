@@ -41,3 +41,17 @@ This MVP covers only the traveler side of LiveWalk. Guide apps, marketplace disp
 - Expo + React Native is the fastest practical path to Android testing with Expo Go or an Android emulator.
 - All data is mocked locally so the user can click through the whole traveler journey without a backend.
 - Native maps, live video, payments, notifications, accounts, and guide dispatch are intentionally deferred.
+
+## Shared backend booking cycle added
+- The traveler request is now posted to the shared LiveWalk Marketplace API at `https://rendezvous-livewalk-api.webpeter.com`.
+- After submission, the traveler app polls the request every 2 seconds while the guide app polls pending requests from the same backend.
+- When the guide APK accepts the request, the traveler booking updates to confirmed and receives the guide/session IDs.
+- Joining the live room starts the shared session and both APKs can post/read basic session messages.
+
+## End-to-end APK test
+1. Install/open both rebuilt APKs.
+2. In Traveler, tap **Send to guides** from the request/review flow.
+3. In Guide, open the dashboard and tap **View live request**.
+4. In Guide, tap **Accept**.
+5. Traveler should change from waiting to confirmed within roughly 2 seconds.
+6. Join/start the live session on either side and send a quick message; the other APK sees it in the shared messages panel.

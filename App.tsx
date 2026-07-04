@@ -5,7 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
 import { defaultRequest, estimateRequest } from './src/data/mock';
-import { API_BASE, createWalkRequest, getSessionStatus, getWalkRequest, health, MarketplaceRequest, sendSessionMessage, SessionMessage, startSession } from './src/api';
+import { API_BASE, AuthPayload, AuthUser, createWalkRequest, getSessionStatus, getWalkRequest, health, loginAccount, MarketplaceRequest, registerAccount, sendSessionMessage, SessionMessage, setAuthToken, startSession } from './src/api';
+import { AuthScreen } from './src/screens/AuthScreen';
 import { ConfirmedScreen } from './src/screens/ConfirmedScreen';
 import { LiveWalkScreen } from './src/screens/LiveWalkScreen';
 import { MatchingScreen } from './src/screens/MatchingScreen';
@@ -34,6 +35,9 @@ export default function App() {
   const [apiOnline, setApiOnline] = useState(false);
   const [apiNote, setApiNote] = useState('Checking backend…');
   const [busy, setBusy] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authUser, setAuthUser] = useState<AuthUser | undefined>();
   const [messages, setMessages] = useState<SessionMessage[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const estimate = useMemo(() => estimateRequest(request), [request]);
@@ -48,6 +52,11 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!authUser) {
+      setApiOnline(false);
+      setApiNote('Log in to connect backend');
+      return;
+    }
     let active = true;
     const poll = async () => {
       try {
@@ -78,7 +87,7 @@ export default function App() {
     poll();
     const timer = setInterval(poll, 2000);
     return () => { active = false; clearInterval(timer); };
-  }, [remoteRequest?.id, screen]);
+  }, [authUser, remoteRequest?.id, screen]);
 
   const goPrevious = () => {
     if (!isFirstScreen) navigateTo(screenOrder[currentIndex - 1]);
@@ -128,6 +137,21 @@ export default function App() {
     navigateTo('request');
   };
 
+  const handleAuth = async (mode: 'register' | 'login', payload: AuthPayload) => {
+    setAuthBusy(true);
+    setAuthError('');
+    try {
+      const data = mode === 'register' ? await registerAccount(payload) : await loginAccount(payload);
+      setAuthToken(data.token);
+      setAuthUser(data.user);
+      setScreen('onboarding');
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -146,8 +170,8 @@ export default function App() {
               <Text style={styles.statusText}>{apiOnline ? 'Live' : 'Sync'}</Text>
             </View>
           </View>
-          <Text style={styles.backendLine} numberOfLines={1}>{apiNote} • {API_BASE.replace('https://', '')}</Text>
-          <View style={styles.stepper}>
+          <Text style={styles.backendLine} numberOfLines={1}>{authUser ? `${authUser.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
+          {authUser ? <View style={styles.stepper}>
             {screenOrder.map((item, index) => {
               const active = item === screen;
               return (
@@ -157,22 +181,28 @@ export default function App() {
                 </Pressable>
               );
             })}
-          </View>
+          </View> : null}
           <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator>
-            {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
-            {screen === 'request' ? <RequestScreen request={request} onChange={setRequest} onReview={() => navigateTo('review')} /> : null}
-            {screen === 'review' ? <ReviewScreen request={request} estimate={estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
-            {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={async () => remoteRequest && setRemoteRequest((await getWalkRequest(remoteRequest.id)).request)} onReset={resetLocal} /> : null}
-            {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} remoteRequest={remoteRequest} onJoin={joinLive} /> : null}
-            {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
-            {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
+            {!authUser ? (
+              <AuthScreen busy={authBusy} error={authError} onSubmit={handleAuth} />
+            ) : (
+              <>
+                {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
+                {screen === 'request' ? <RequestScreen request={request} onChange={setRequest} onReview={() => navigateTo('review')} /> : null}
+                {screen === 'review' ? <ReviewScreen request={request} estimate={estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
+                {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={async () => remoteRequest && setRemoteRequest((await getWalkRequest(remoteRequest.id)).request)} onReset={resetLocal} /> : null}
+                {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} remoteRequest={remoteRequest} onJoin={joinLive} /> : null}
+                {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
+                {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
+              </>
+            )}
           </ScrollView>
-          <SafeAreaView style={styles.bottomSafeArea} edges={['bottom']}>
+          {authUser ? <SafeAreaView style={styles.bottomSafeArea} edges={['bottom']}>
             <View style={styles.bottomNav}>
               <Button label="Previous" icon="chevron-back" variant="secondary" onPress={goPrevious} disabled={isFirstScreen} style={styles.navButton} />
               <Button label={isLastScreen ? 'New walk' : 'Next'} icon={isLastScreen ? 'add-circle' : 'chevron-forward'} onPress={goNext} style={styles.navButton} />
             </View>
-          </SafeAreaView>
+          </SafeAreaView> : null}
         </View>
       </SafeAreaView>
     </SafeAreaProvider>

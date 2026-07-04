@@ -18,9 +18,18 @@ export function LiveWalkScreen({
 }) {
   const [talking, setTalking] = useState(false);
   const [translation, setTranslation] = useState(true);
+  const sessionReady = Boolean(remoteRequest?.sessionId);
   const [actionNote, setActionNote] = useState('Live controls send updates to the guide through the shared session.');
+  const liveControlNote = sessionReady
+    ? actionNote
+    : 'Controls unlock after the guide accepts and the shared session is ready.';
 
   const sendSessionEvent = async (text: string, success: string) => {
+    if (!sessionReady) {
+      setActionNote('Controls unlock after the guide accepts and the shared session is ready.');
+      Alert.alert('Session not ready', 'Ask the guide to accept the request first.');
+      return;
+    }
     try {
       await onSendMessage(text);
       setActionNote(success);
@@ -41,11 +50,13 @@ export function LiveWalkScreen({
   );
 
   const startTalking = () => {
+    if (!sessionReady) return;
     setTalking(true);
     void sendSessionEvent('🎙️ Traveler is holding to talk.', 'Talk status sent to the guide.');
   };
 
   const stopTalking = () => {
+    if (!talking) return;
     setTalking(false);
     void sendSessionEvent('🎙️ Traveler finished talking.', 'Talk status ended.');
   };
@@ -66,16 +77,17 @@ export function LiveWalkScreen({
             activeOpacity={0.82}
             onPressIn={startTalking}
             onPressOut={stopTalking}
-            style={[styles.holdButton, talking && styles.holdButtonActive, styles.controlButton]}
+            disabled={!sessionReady}
+            style={[styles.holdButton, talking && styles.holdButtonActive, !sessionReady && styles.controlDisabled, styles.controlButton]}
           >
             <Ionicons name={talking ? 'mic' : 'mic-outline'} size={18} color={talking ? colors.white : colors.ink} />
             <Text style={[styles.holdButtonText, talking && styles.holdButtonTextActive]}>{talking ? 'Talking…' : 'Hold to talk'}</Text>
           </TouchableOpacity>
-          <Button label="Message" icon="chatbubble-ellipses" variant="secondary" onPress={sendQuickMessage} style={styles.controlButton} />
-          <Button label="Stop here" icon="hand-left" variant="secondary" onPress={requestStopHere} style={styles.controlButton} />
-          <Button label="Change route" icon="git-branch" variant="secondary" onPress={() => sendSessionEvent('Traveler requested a route change: quieter street.', 'Route-change request sent to the guide.')} style={styles.controlButton} />
+          <Button label="Message" icon="chatbubble-ellipses" variant="secondary" onPress={sendQuickMessage} disabled={!sessionReady} style={styles.controlButton} />
+          <Button label="Stop here" icon="hand-left" variant="secondary" onPress={requestStopHere} disabled={!sessionReady} style={styles.controlButton} />
+          <Button label="Change route" icon="git-branch" variant="secondary" onPress={() => sendSessionEvent('Traveler requested a route change: quieter street.', 'Route-change request sent to the guide.')} disabled={!sessionReady} style={styles.controlButton} />
         </View>
-        <Text style={styles.actionNote}>{actionNote}</Text>
+        <Text style={styles.actionNote}>{liveControlNote}</Text>
       </Card>
       <Card style={styles.panel}>
         <View style={styles.panelHeader}>
@@ -141,6 +153,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   holdButtonActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  controlDisabled: { opacity: 0.45 },
   holdButtonText: { color: colors.ink, fontWeight: '800', fontSize: 15 },
   holdButtonTextActive: { color: colors.white },
   actionNote: { color: colors.muted, fontWeight: '700', lineHeight: 19, marginTop: 12 },

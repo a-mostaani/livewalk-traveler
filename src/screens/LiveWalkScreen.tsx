@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, colors } from '../components/Primitives';
 import { MiniRouteMap, ProgressRail, VideoPlaceholder } from '../components/TravelVisuals';
@@ -18,13 +18,36 @@ export function LiveWalkScreen({
 }) {
   const [talking, setTalking] = useState(false);
   const [translation, setTranslation] = useState(true);
+  const [actionNote, setActionNote] = useState('Live controls send updates to the guide through the shared session.');
 
-  const sendQuickMessage = async () => {
+  const sendSessionEvent = async (text: string, success: string) => {
     try {
-      await onSendMessage('Please slow down near the market.');
+      await onSendMessage(text);
+      setActionNote(success);
     } catch {
+      setActionNote('Not sent yet — the shared session is not ready.');
       Alert.alert('Message not sent', 'The shared session is not ready yet.');
     }
+  };
+
+  const sendQuickMessage = () => sendSessionEvent(
+    'Traveler message: Please slow down near the market.',
+    'Message sent to the guide.'
+  );
+
+  const requestStopHere = () => sendSessionEvent(
+    '🚩 STOP HERE requested by traveler.',
+    'Stop-here request sent to the guide.'
+  );
+
+  const startTalking = () => {
+    setTalking(true);
+    void sendSessionEvent('🎙️ Traveler is holding to talk.', 'Talk status sent to the guide.');
+  };
+
+  const stopTalking = () => {
+    setTalking(false);
+    void sendSessionEvent('🎙️ Traveler finished talking.', 'Talk status ended.');
   };
 
   return (
@@ -39,11 +62,20 @@ export function LiveWalkScreen({
       <VideoPlaceholder />
       <Card style={styles.controlCard}>
         <View style={styles.controlGrid}>
-          <Button label={talking ? 'Talking' : 'Hold to talk'} icon={talking ? 'mic' : 'mic-outline'} variant={talking ? 'primary' : 'secondary'} onPress={() => setTalking((value) => !value)} style={styles.controlButton} />
+          <TouchableOpacity
+            activeOpacity={0.82}
+            onPressIn={startTalking}
+            onPressOut={stopTalking}
+            style={[styles.holdButton, talking && styles.holdButtonActive, styles.controlButton]}
+          >
+            <Ionicons name={talking ? 'mic' : 'mic-outline'} size={18} color={talking ? colors.white : colors.ink} />
+            <Text style={[styles.holdButtonText, talking && styles.holdButtonTextActive]}>{talking ? 'Talking…' : 'Hold to talk'}</Text>
+          </TouchableOpacity>
           <Button label="Message" icon="chatbubble-ellipses" variant="secondary" onPress={sendQuickMessage} style={styles.controlButton} />
-          <Button label="Stop here" icon="hand-left" variant="secondary" onPress={() => Alert.alert('Guide notified', 'Shared control mock: stop here.')} style={styles.controlButton} />
-          <Button label="Change route" icon="git-branch" variant="secondary" onPress={() => Alert.alert('Route change requested', 'Shared control mock: quieter street.')} style={styles.controlButton} />
+          <Button label="Stop here" icon="hand-left" variant="secondary" onPress={requestStopHere} style={styles.controlButton} />
+          <Button label="Change route" icon="git-branch" variant="secondary" onPress={() => sendSessionEvent('Traveler requested a route change: quieter street.', 'Route-change request sent to the guide.')} style={styles.controlButton} />
         </View>
+        <Text style={styles.actionNote}>{actionNote}</Text>
       </Card>
       <Card style={styles.panel}>
         <View style={styles.panelHeader}>
@@ -96,6 +128,22 @@ const styles = StyleSheet.create({
   controlCard: { marginTop: 14 },
   controlGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   controlButton: { flexBasis: '47%', flexGrow: 1 },
+  holdButton: {
+    minHeight: 48,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  holdButtonActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  holdButtonText: { color: colors.ink, fontWeight: '800', fontSize: 15 },
+  holdButtonTextActive: { color: colors.white },
+  actionNote: { color: colors.muted, fontWeight: '700', lineHeight: 19, marginTop: 12 },
   panel: { marginTop: 14 },
   panelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12 },
   panelTitle: { color: colors.ink, fontSize: 18, fontWeight: '900' },

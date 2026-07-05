@@ -36,7 +36,7 @@ export function MiniRouteMap({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function VideoPlaceholder() {
+export function VideoPlaceholder({ guideName = 'Guide', routeLabel = 'live route' }: { guideName?: string; routeLabel?: string }) {
   return (
     <View style={styles.video}>
       <View style={styles.videoGradientTop} />
@@ -50,7 +50,7 @@ export function VideoPlaceholder() {
         <Text style={styles.videoText}>Mock stream placeholder until video integration</Text>
       </View>
       <View style={styles.videoBottom}>
-        <Text style={styles.videoMeta}>Yuki • Shibuya side street</Text>
+        <Text style={styles.videoMeta}>{guideName} • {routeLabel}</Text>
         <Text style={styles.videoMeta}>12:18 remaining</Text>
       </View>
     </View>

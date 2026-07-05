@@ -64,7 +64,6 @@ export async function createWalkRequest(request: WalkRequest) {
   return api<{ ok: true; request: MarketplaceRequest }>('/api/requests', {
     method: 'POST',
     body: JSON.stringify({
-      travelerName: 'Sofia R.',
       origin: request.start,
       destination: request.destination,
       scheduledTime: request.dateTime,
@@ -90,6 +89,6 @@ export async function getSessionStatus(sessionId: string) {
 export async function sendSessionMessage(sessionId: string, text: string) {
   return api<{ ok: true; message: SessionMessage }>(`/api/sessions/${sessionId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ senderRole: 'traveler', senderName: 'Sofia', text }),
+    body: JSON.stringify({ text }),
   });
 }

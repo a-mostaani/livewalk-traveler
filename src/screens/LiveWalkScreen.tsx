@@ -70,7 +70,7 @@ export function LiveWalkScreen({
         </View>
         <View style={styles.timerPill}><Text style={styles.timerText}>{remoteRequest?.status === 'live' ? 'LIVE' : 'Ready'}</Text></View>
       </View>
-      <VideoPlaceholder />
+      <VideoPlaceholder guideName={remoteRequest?.guide?.name?.trim() || 'Guide'} routeLabel={remoteRequest?.origin || 'live route'} />
       <Card style={styles.controlCard}>
         <View style={styles.controlGrid}>
           <TouchableOpacity

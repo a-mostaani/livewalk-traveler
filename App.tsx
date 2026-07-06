@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
 import { defaultRequest, estimateRequest } from './src/data/mock';
-import { API_BASE, AuthPayload, AuthUser, createWalkRequest, getSessionStatus, getWalkRequest, health, loginAccount, MarketplaceRequest, registerAccount, sendSessionMessage, SessionMessage, setAuthToken, startSession } from './src/api';
+import { API_BASE, AuthPayload, AuthUser, createWalkRequest, getSessionStatus, getWalkRequest, health, loginAccount, MarketplaceRequest, registerAccount, sendSessionMessage, SessionMessage, setAuthToken } from './src/api';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ConfirmedScreen } from './src/screens/ConfirmedScreen';
 import { LiveWalkScreen } from './src/screens/LiveWalkScreen';
@@ -41,12 +41,14 @@ export default function App() {
   const [messages, setMessages] = useState<SessionMessage[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const estimate = useMemo(() => estimateRequest(request), [request]);
+  const guideHasStartedLive = Boolean(remoteRequest?.sessionId && remoteRequest?.status === 'live');
 
   const currentIndex = screenOrder.indexOf(screen);
   const isFirstScreen = currentIndex === 0;
   const isLastScreen = currentIndex === screenOrder.length - 1;
 
   const navigateTo = (nextScreen: Screen) => {
+    if (nextScreen === 'live' && !guideHasStartedLive) return;
     setScreen(nextScreen);
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false }));
   };
@@ -94,8 +96,12 @@ export default function App() {
   };
 
   const goNext = () => {
+    if (screen === 'confirmed' && !guideHasStartedLive) return;
     navigateTo(isLastScreen ? 'request' : screenOrder[currentIndex + 1]);
   };
+  const nextDisabled = screen === 'confirmed' && !guideHasStartedLive;
+  const nextLabel = nextDisabled ? 'Waiting for guide' : (isLastScreen ? 'New walk' : 'Next');
+  const nextIcon = nextDisabled ? 'lock-closed' : (isLastScreen ? 'add-circle' : 'chevron-forward');
 
   const submitRequest = async () => {
     setBusy(true);
@@ -115,12 +121,11 @@ export default function App() {
   };
 
   const joinLive = async () => {
-    if (remoteRequest?.sessionId) {
-      try {
-        const data = await startSession(remoteRequest.sessionId);
-        setMessages(data.messages);
-      } catch {}
-    }
+    if (!guideHasStartedLive || !remoteRequest?.sessionId) return;
+    try {
+      const data = await getSessionStatus(remoteRequest.sessionId);
+      setMessages(data.messages);
+    } catch {}
     navigateTo('live');
   };
 
@@ -191,7 +196,7 @@ export default function App() {
                 {screen === 'request' ? <RequestScreen request={request} onChange={setRequest} onReview={() => navigateTo('review')} /> : null}
                 {screen === 'review' ? <ReviewScreen request={request} estimate={estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
                 {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={async () => remoteRequest && setRemoteRequest((await getWalkRequest(remoteRequest.id)).request)} onReset={resetLocal} /> : null}
-                {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} remoteRequest={remoteRequest} onJoin={joinLive} /> : null}
+                {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
                 {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
                 {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
               </>
@@ -200,7 +205,7 @@ export default function App() {
           {authUser ? <SafeAreaView style={styles.bottomSafeArea} edges={['bottom']}>
             <View style={styles.bottomNav}>
               <Button label="Previous" icon="chevron-back" variant="secondary" onPress={goPrevious} disabled={isFirstScreen} style={styles.navButton} />
-              <Button label={isLastScreen ? 'New walk' : 'Next'} icon={isLastScreen ? 'add-circle' : 'chevron-forward'} onPress={goNext} style={styles.navButton} />
+              <Button label={nextLabel} icon={nextIcon} onPress={goNext} disabled={nextDisabled} style={styles.navButton} />
             </View>
           </SafeAreaView> : null}
         </View>

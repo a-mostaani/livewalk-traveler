@@ -10,15 +10,18 @@ export function ConfirmedScreen({
   request,
   estimate,
   remoteRequest,
+  canJoinLive,
   onJoin,
 }: {
   request: WalkRequest;
   estimate: Estimate;
   remoteRequest?: MarketplaceRequest;
+  canJoinLive: boolean;
   onJoin: () => void;
 }) {
   const confirmed = remoteRequest?.status === 'accepted' || remoteRequest?.status === 'live';
   const guideName = remoteRequest?.guide?.name;
+  const joinLabel = canJoinLive ? 'Join shared live walk' : (confirmed ? 'Waiting for guide to start' : 'Waiting for guide');
   return (
     <View>
       <Header kicker={confirmed ? 'Confirmed' : 'Pending'} title={confirmed ? 'Your live walk is booked.' : 'Your request is waiting for a guide.'} />
@@ -41,7 +44,7 @@ export function ConfirmedScreen({
           <Stat label="Language" value={request.language} />
         </View>
         <View style={styles.checklist}>
-          {['Guide acceptance is shared through the backend', 'Live session state is visible to both APKs', 'Session messages are stored in the shared demo room'].map((item) => (
+          {['Guide acceptance is shared through the backend', 'Guide starts the live session after the readiness checklist', 'Traveler controls unlock only once the guide is live'].map((item) => (
             <View key={item} style={styles.checkRow}>
               <Ionicons name="checkmark-circle" size={18} color={colors.green} />
               <Text style={styles.checkText}>{item}</Text>
@@ -49,7 +52,7 @@ export function ConfirmedScreen({
           ))}
         </View>
       </Card>
-      <Button label={confirmed ? 'Join shared live walk' : 'Preview pending live room'} icon="videocam" onPress={onJoin} style={{ marginTop: 18 }} />
+      <Button label={joinLabel} icon={canJoinLive ? 'videocam' : 'lock-closed'} onPress={onJoin} disabled={!canJoinLive} style={{ marginTop: 18 }} />
     </View>
   );
 }

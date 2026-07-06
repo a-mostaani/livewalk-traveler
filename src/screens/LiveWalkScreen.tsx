@@ -18,24 +18,24 @@ export function LiveWalkScreen({
 }) {
   const [talking, setTalking] = useState(false);
   const [translation, setTranslation] = useState(true);
-  const sessionReady = Boolean(remoteRequest?.sessionId);
+  const sessionReady = Boolean(remoteRequest?.sessionId && remoteRequest?.status === 'live');
   const [actionNote, setActionNote] = useState('Live controls send updates to the guide through the shared session.');
   const liveControlNote = sessionReady
     ? actionNote
-    : 'Controls unlock after the guide accepts and the shared session is ready.';
+    : 'Controls unlock after the guide starts the shared live session.';
 
   const sendSessionEvent = async (text: string, success: string) => {
     if (!sessionReady) {
-      setActionNote('Controls unlock after the guide accepts and the shared session is ready.');
-      Alert.alert('Session not ready', 'Ask the guide to accept the request first.');
+      setActionNote('Controls unlock after the guide starts the shared live session.');
+      Alert.alert('Session not live yet', 'Wait for the guide to complete readiness checks and start the live session.');
       return;
     }
     try {
       await onSendMessage(text);
       setActionNote(success);
     } catch {
-      setActionNote('Not sent yet — the shared session is not ready.');
-      Alert.alert('Message not sent', 'The shared session is not ready yet.');
+      setActionNote('Not sent yet — the guide has not started live.');
+      Alert.alert('Message not sent', 'Wait for the guide to start the live session first.');
     }
   };
 

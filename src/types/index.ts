@@ -69,3 +69,26 @@ export type SessionMessage = {
   text: string;
   createdAt: string;
 };
+
+
+export type LiveSession = {
+  id: string;
+  requestId: string;
+  status: 'ready' | 'live';
+  startedAt?: string | null;
+  location?: { label?: string; progress?: number } | null;
+};
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: 'traveler' | 'guide';
+  createdAt: string;
+};
+
+export type AuthPayload = {
+  name?: string;
+  email: string;
+  password: string;
+};

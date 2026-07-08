@@ -95,6 +95,11 @@ FLOW.md                          Product flow summary
 README.md                        Setup, run, mocked scope, next integrations
 ```
 
+
+## Shared API contract
+
+Runtime API contract types live in `src/types/index.ts`. `src/api.ts` imports and re-exports those types so request/session/user shapes are declared in one place per app. The current shared contract is copied between Traveler and Guide deliberately; if the contract grows further, promote it into a generated or packaged shared contract before adding new request/session fields.
+
 ## Shared backend integration
 
 This build points at the published demo backend:
@@ -111,4 +116,4 @@ Functional vertical slice now included:
 5. Both sides enter a shared live session state.
 6. Both sides can post/read basic session messages.
 
-For a clean demo, use `POST /api/demo/reset` on the backend or the reset button in the rebuilt traveler APK.
+For a clean demo, use the protected backend demo seed/reset flow; do not expose destructive reset publicly in the app.

@@ -5,7 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
 import { defaultRequest, estimateRequest } from './src/data/mock';
-import { API_BASE, AuthPayload, AuthUser, createWalkRequest, getSessionStatus, getWalkRequest, health, loginAccount, MarketplaceRequest, registerAccount, sendSessionMessage, SessionMessage, setAuthToken } from './src/api';
+import { API_BASE, createWalkRequest, getSessionStatus, getWalkRequest, health, MarketplaceRequest, sendSessionMessage, SessionMessage } from './src/api';
+import { AuthProvider, useAuth } from './src/auth/AuthContext';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ConfirmedScreen } from './src/screens/ConfirmedScreen';
 import { LiveWalkScreen } from './src/screens/LiveWalkScreen';
@@ -28,16 +29,14 @@ const screenLabels: Record<Screen, string> = {
   summary: 'Summary',
 };
 
-export default function App() {
+function TravelerApp() {
+  const { user } = useAuth();
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [request, setRequest] = useState<WalkRequest>(defaultRequest);
   const [remoteRequest, setRemoteRequest] = useState<MarketplaceRequest | undefined>();
   const [apiOnline, setApiOnline] = useState(false);
   const [apiNote, setApiNote] = useState('Checking backend…');
   const [busy, setBusy] = useState(false);
-  const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [authUser, setAuthUser] = useState<AuthUser | undefined>();
   const [messages, setMessages] = useState<SessionMessage[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const estimate = useMemo(() => estimateRequest(request), [request]);
@@ -54,7 +53,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!authUser) {
+    if (!user) {
       setApiOnline(false);
       setApiNote('Log in to connect backend');
       return;
@@ -89,7 +88,7 @@ export default function App() {
     poll();
     const timer = setInterval(poll, 2000);
     return () => { active = false; clearInterval(timer); };
-  }, [authUser, remoteRequest?.id, screen]);
+  }, [user, remoteRequest?.id, screen]);
 
   const goPrevious = () => {
     if (!isFirstScreen) navigateTo(screenOrder[currentIndex - 1]);
@@ -142,21 +141,6 @@ export default function App() {
     navigateTo('request');
   };
 
-  const handleAuth = async (mode: 'register' | 'login', payload: AuthPayload) => {
-    setAuthBusy(true);
-    setAuthError('');
-    try {
-      const data = mode === 'register' ? await registerAccount(payload) : await loginAccount(payload);
-      setAuthToken(data.token);
-      setAuthUser(data.user);
-      setScreen('onboarding');
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Authentication failed');
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -175,8 +159,8 @@ export default function App() {
               <Text style={styles.statusText}>{apiOnline ? 'Live' : 'Sync'}</Text>
             </View>
           </View>
-          <Text style={styles.backendLine} numberOfLines={1}>{authUser ? `${authUser.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
-          {authUser ? <View style={styles.stepper}>
+          <Text style={styles.backendLine} numberOfLines={1}>{user ? `${user.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
+          {user ? <View style={styles.stepper}>
             {screenOrder.map((item, index) => {
               const active = item === screen;
               return (
@@ -188,8 +172,8 @@ export default function App() {
             })}
           </View> : null}
           <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator>
-            {!authUser ? (
-              <AuthScreen busy={authBusy} error={authError} onSubmit={handleAuth} />
+            {!user ? (
+              <AuthScreen />
             ) : (
               <>
                 {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
@@ -202,7 +186,7 @@ export default function App() {
               </>
             )}
           </ScrollView>
-          {authUser ? <SafeAreaView style={styles.bottomSafeArea} edges={['bottom']}>
+          {user ? <SafeAreaView style={styles.bottomSafeArea} edges={['bottom']}>
             <View style={styles.bottomNav}>
               <Button label="Previous" icon="chevron-back" variant="secondary" onPress={goPrevious} disabled={isFirstScreen} style={styles.navButton} />
               <Button label={nextLabel} icon={nextIcon} onPress={goNext} disabled={nextDisabled} style={styles.navButton} />
@@ -243,3 +227,11 @@ const styles = StyleSheet.create({
   bottomNav: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, borderTopWidth: 1, borderTopColor: 'rgba(6,24,38,0.08)', backgroundColor: 'rgba(251,247,239,0.98)' },
   navButton: { flex: 1 },
 });
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <TravelerApp />
+    </AuthProvider>
+  );
+}

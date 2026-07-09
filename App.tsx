@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
 import { defaultRequest, estimateRequest } from './src/data/mock';
-import { API_BASE, createWalkRequest, getSessionStatus, getWalkRequest, health, MarketplaceRequest, sendSessionMessage, SessionMessage } from './src/api';
+import { useSession } from './src/hooks/useSession';
+import { API_BASE } from './src/api';
 import { AuthProvider, useAuth } from './src/auth/AuthContext';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ConfirmedScreen } from './src/screens/ConfirmedScreen';
@@ -33,62 +34,26 @@ function TravelerApp() {
   const { user } = useAuth();
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [request, setRequest] = useState<WalkRequest>(defaultRequest);
-  const [remoteRequest, setRemoteRequest] = useState<MarketplaceRequest | undefined>();
-  const [apiOnline, setApiOnline] = useState(false);
-  const [apiNote, setApiNote] = useState('Checking backend…');
-  const [busy, setBusy] = useState(false);
-  const [messages, setMessages] = useState<SessionMessage[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const estimate = useMemo(() => estimateRequest(request), [request]);
-  const guideHasStartedLive = Boolean(remoteRequest?.sessionId && remoteRequest?.status === 'live');
 
   const currentIndex = screenOrder.indexOf(screen);
   const isFirstScreen = currentIndex === 0;
   const isLastScreen = currentIndex === screenOrder.length - 1;
+
+  const session = useSession({ enabled: Boolean(user), localRequest: request, currentScreen: screen, onAccepted: () => navigateTo('confirmed') });
+  const remoteRequest = session.request;
+  const messages = session.messages;
+  const apiOnline = session.apiOnline;
+  const apiNote = session.apiNote;
+  const busy = session.busy;
+  const guideHasStartedLive = session.guideHasStartedLive;
 
   const navigateTo = (nextScreen: Screen) => {
     if (nextScreen === 'live' && !guideHasStartedLive) return;
     setScreen(nextScreen);
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false }));
   };
-
-  useEffect(() => {
-    if (!user) {
-      setApiOnline(false);
-      setApiNote('Log in to connect backend');
-      return;
-    }
-    let active = true;
-    const poll = async () => {
-      try {
-        await health();
-        if (!active) return;
-        setApiOnline(true);
-        setApiNote('Backend connected');
-        if (remoteRequest?.id) {
-          const data = await getWalkRequest(remoteRequest.id);
-          if (!active) return;
-          setRemoteRequest(data.request);
-          if ((data.request.status === 'accepted' || data.request.status === 'live') && screen === 'matching') {
-            navigateTo('confirmed');
-          }
-          if (data.request.sessionId) {
-            try {
-              const session = await getSessionStatus(data.request.sessionId);
-              if (active) setMessages(session.messages);
-            } catch {}
-          }
-        }
-      } catch {
-        if (!active) return;
-        setApiOnline(false);
-        setApiNote('Backend reconnecting');
-      }
-    };
-    poll();
-    const timer = setInterval(poll, 2000);
-    return () => { active = false; clearInterval(timer); };
-  }, [user, remoteRequest?.id, screen]);
 
   const goPrevious = () => {
     if (!isFirstScreen) navigateTo(screenOrder[currentIndex - 1]);
@@ -103,41 +68,21 @@ function TravelerApp() {
   const nextIcon = nextDisabled ? 'lock-closed' : (isLastScreen ? 'add-circle' : 'chevron-forward');
 
   const submitRequest = async () => {
-    setBusy(true);
-    setApiNote('Sending request to guide marketplace…');
-    try {
-      const data = await createWalkRequest(request);
-      setRemoteRequest(data.request);
-      setApiOnline(true);
-      setApiNote('Request live for guides');
-      navigateTo('matching');
-    } catch {
-      setApiOnline(false);
-      setApiNote('Could not send request yet');
-    } finally {
-      setBusy(false);
-    }
+    const submitted = await session.submitRequest();
+    if (submitted) navigateTo('matching');
   };
 
   const joinLive = async () => {
-    if (!guideHasStartedLive || !remoteRequest?.sessionId) return;
-    try {
-      const data = await getSessionStatus(remoteRequest.sessionId);
-      setMessages(data.messages);
-    } catch {}
-    navigateTo('live');
+    const joined = await session.joinLive();
+    if (joined) navigateTo('live');
   };
 
   const sendTravelerMessage = async (text: string) => {
-    if (!remoteRequest?.sessionId) return;
-    await sendSessionMessage(remoteRequest.sessionId, text);
-    const data = await getSessionStatus(remoteRequest.sessionId);
-    setMessages(data.messages);
+    await session.sendMessage(text);
   };
 
   const resetLocal = () => {
-    setRemoteRequest(undefined);
-    setMessages([]);
+    session.reset();
     navigateTo('request');
   };
 
@@ -179,7 +124,7 @@ function TravelerApp() {
                 {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
                 {screen === 'request' ? <RequestScreen request={request} onChange={setRequest} onReview={() => navigateTo('review')} /> : null}
                 {screen === 'review' ? <ReviewScreen request={request} estimate={estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
-                {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={async () => remoteRequest && setRemoteRequest((await getWalkRequest(remoteRequest.id)).request)} onReset={resetLocal} /> : null}
+                {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} /> : null}
                 {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
                 {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
                 {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}

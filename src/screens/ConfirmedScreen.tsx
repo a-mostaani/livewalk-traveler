@@ -3,18 +3,17 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Header, Stat, colors } from '../components/Primitives';
 import { MiniRouteMap } from '../components/TravelVisuals';
-import { Estimate, WalkRequest } from '../types';
+import { formatDuration, formatEstimateTotal, formatScheduledStart } from '../format';
+import { WalkRequest } from '../types';
 import { MarketplaceRequest } from '../api';
 
 export function ConfirmedScreen({
   request,
-  estimate,
   remoteRequest,
   canJoinLive,
   onJoin,
 }: {
   request: WalkRequest;
-  estimate: Estimate;
   remoteRequest?: MarketplaceRequest;
   canJoinLive: boolean;
   onJoin: () => void;
@@ -22,6 +21,8 @@ export function ConfirmedScreen({
   const confirmed = remoteRequest?.status === 'accepted' || remoteRequest?.status === 'live';
   const guideName = remoteRequest?.guide?.name;
   const joinLabel = canJoinLive ? 'Join shared live walk' : (confirmed ? 'Waiting for guide to start' : 'Waiting for guide');
+  const scheduledStart = remoteRequest?.scheduledStart ?? request.scheduledStart;
+  const durationMinutes = remoteRequest?.durationMinutes ?? request.durationMinutes;
   return (
     <View>
       <Header kicker={confirmed ? 'Confirmed' : 'Pending'} title={confirmed ? 'Your live walk is booked.' : 'Your request is waiting for a guide.'} />
@@ -30,17 +31,17 @@ export function ConfirmedScreen({
           <Ionicons name={confirmed ? 'checkmark' : 'time'} size={28} color={colors.white} />
         </View>
         <Text style={styles.heroTitle}>{confirmed ? `${guideName} will guide you` : 'Guides can accept this request'}</Text>
-        <Text style={styles.heroBody}>{request.dateTime} • {request.duration} • {request.language}</Text>
+        <Text style={styles.heroBody}>{formatScheduledStart(scheduledStart)} • {formatDuration(durationMinutes)} • {request.language}</Text>
         {remoteRequest?.id ? <Text style={styles.bookingId}>Booking {remoteRequest.id}</Text> : null}
       </Card>
       <MiniRouteMap compact />
       <Card style={styles.detailCard}>
         <Text style={styles.sectionTitle}>Booking detail</Text>
-        <Text style={styles.route}>{request.start}</Text>
+        <Text style={styles.route}>{remoteRequest?.origin.label ?? request.origin.label}</Text>
         <Text style={styles.arrow}>→</Text>
-        <Text style={styles.route}>{request.destination}</Text>
+        <Text style={styles.route}>{remoteRequest?.destination.label ?? request.destination.label}</Text>
         <View style={styles.stats}>
-          <Stat label="Estimated" value={`$${estimate.total}`} />
+          <Stat label="Estimated" value={formatEstimateTotal(remoteRequest?.estimate)} />
           <Stat label="Language" value={request.language} />
         </View>
         <View style={styles.checklist}>

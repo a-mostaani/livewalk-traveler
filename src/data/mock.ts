@@ -1,10 +1,10 @@
-import { Guide, WalkRequest, Estimate } from '../types';
+import { Guide, WalkRequest } from '../types';
 
 export const defaultRequest: WalkRequest = {
-  start: 'Shibuya Station, Tokyo',
-  destination: 'Meiji Shrine forest entrance',
-  dateTime: 'Tomorrow, 10:30 AM',
-  duration: '45 min',
+  origin: { label: 'Shibuya Station Hachiko Gate', lat: 35.6591, lng: 139.7005 },
+  destination: { label: 'Meiji Shrine forest entrance', lat: 35.6764, lng: 139.6993 },
+  scheduledStart: '2026-07-10T10:30:00+09:00',
+  durationMinutes: 45,
   language: 'English',
   interests: ['Hidden corners', 'Food stops', 'Local stories'],
 };
@@ -49,20 +49,6 @@ export const guides: Guide[] = [
   },
 ];
 
-export function estimateRequest(request: WalkRequest): Estimate {
-  const baseDistance = Math.max(1.2, Math.min(5.8, (request.start.length + request.destination.length) / 18));
-  const minutes = parseInt(request.duration, 10) || 45;
-  const guideFee = Math.round(minutes * 0.72);
-  const platformFee = Math.round(guideFee * 0.18);
-
-  return {
-    distanceKm: Number(baseDistance.toFixed(1)),
-    walkingMinutes: Math.min(minutes, Math.round(baseDistance * 18)),
-    guideFee,
-    platformFee,
-    total: guideFee + platformFee,
-  };
-}
 
 export const captions = [
   'Guide: We are leaving the station plaza now. It is busy, but the side street is calmer.',

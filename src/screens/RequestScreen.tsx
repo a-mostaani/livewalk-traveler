@@ -21,22 +21,27 @@ export function RequestScreen({
     });
   };
 
+  const updateDuration = (value: string) => {
+    const minutes = parseInt(value, 10);
+    onChange({ ...request, durationMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 45 });
+  };
+
   return (
     <View>
       <Header
         kicker="New request"
         title="Where should your guide walk?"
-        body="Start with a clear route. The matching side is mocked for this MVP, so you can test the complete traveler journey."
+        body="Start with clear route labels. Demo coordinates are fixed for now, and the backend calculates the estimate when you send."
       />
       <Card>
-        <Field label="Starting point" value={request.start} onChangeText={(start) => onChange({ ...request, start })} />
-        <Field label="Destination" value={request.destination} onChangeText={(destination) => onChange({ ...request, destination })} />
+        <Field label="Starting point" value={request.origin.label} onChangeText={(label) => onChange({ ...request, origin: { ...request.origin, label } })} />
+        <Field label="Destination" value={request.destination.label} onChangeText={(label) => onChange({ ...request, destination: { ...request.destination, label } })} />
         <View style={styles.row}>
           <View style={styles.half}>
-            <Field label="Date & time" value={request.dateTime} onChangeText={(dateTime) => onChange({ ...request, dateTime })} />
+            <Field label="Start ISO time" value={request.scheduledStart} onChangeText={(scheduledStart) => onChange({ ...request, scheduledStart })} />
           </View>
           <View style={styles.half}>
-            <Field label="Duration" value={request.duration} onChangeText={(duration) => onChange({ ...request, duration })} />
+            <Field label="Duration minutes" value={String(request.durationMinutes)} onChangeText={updateDuration} />
           </View>
         </View>
         <Text style={styles.label}>Language</Text>
@@ -57,7 +62,7 @@ export function RequestScreen({
           ))}
         </View>
       </Card>
-      <Button label="Review route and price" icon="map" onPress={onReview} style={{ marginTop: 18 }} />
+      <Button label="Review route" icon="map" onPress={onReview} style={{ marginTop: 18 }} />
     </View>
   );
 }

@@ -74,10 +74,10 @@ export async function createWalkRequest(request: WalkRequest) {
   return api<{ ok: true; request: MarketplaceRequest }>('/api/requests', {
     method: 'POST',
     body: JSON.stringify({
-      origin: request.start,
+      origin: request.origin,
       destination: request.destination,
-      scheduledTime: request.dateTime,
-      duration: request.duration,
+      scheduledStart: request.scheduledStart,
+      durationMinutes: request.durationMinutes,
       language: request.language,
       interests: request.interests,
     }),

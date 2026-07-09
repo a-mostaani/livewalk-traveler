@@ -7,11 +7,17 @@ export type Screen =
   | 'live'
   | 'summary';
 
+export type RequestPoint = {
+  label: string;
+  lat: number;
+  lng: number;
+};
+
 export type WalkRequest = {
-  start: string;
-  destination: string;
-  dateTime: string;
-  duration: string;
+  origin: RequestPoint;
+  destination: RequestPoint;
+  scheduledStart: string;
+  durationMinutes: number;
   language: string;
   interests: string[];
 };
@@ -30,13 +36,13 @@ export type Guide = {
 };
 
 export type Estimate = {
+  currency: string;
   distanceKm: number;
   walkingMinutes: number;
   platformFee: number;
   guideFee: number;
   total: number;
 };
-
 
 export type MarketplaceGuide = {
   id: string;
@@ -47,13 +53,14 @@ export type MarketplaceGuide = {
 export type MarketplaceRequest = {
   id: string;
   travelerName: string;
-  origin: string;
-  destination: string;
+  origin: RequestPoint;
+  destination: RequestPoint;
   route: string;
-  scheduledTime: string;
-  duration: string;
+  scheduledStart: string;
+  durationMinutes: number;
   language: string;
   interests: string[];
+  estimate: Estimate;
   status: 'pending' | 'accepted' | 'declined' | 'live';
   guide: MarketplaceGuide | null;
   sessionId: string | null;
@@ -69,7 +76,6 @@ export type SessionMessage = {
   text: string;
   createdAt: string;
 };
-
 
 export type LiveSession = {
   id: string;

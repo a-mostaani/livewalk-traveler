@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Header, Pill, Stat, colors } from '../components/Primitives';
 import { MiniRouteMap } from '../components/TravelVisuals';
+import { formatDuration } from '../format';
 import { Estimate, WalkRequest } from '../types';
 
 export function ReviewScreen({
@@ -12,7 +13,7 @@ export function ReviewScreen({
   busy = false,
 }: {
   request: WalkRequest;
-  estimate: Estimate;
+  estimate?: Estimate;
   onBack: () => void;
   onFindGuide: () => void;
   busy?: boolean;
@@ -22,13 +23,13 @@ export function ReviewScreen({
       <Header kicker="Route review" title="Check the walk before guides see it." />
       <MiniRouteMap />
       <Card style={styles.card}>
-        <Text style={styles.route}>{request.start}</Text>
+        <Text style={styles.route}>{request.origin.label}</Text>
         <Text style={styles.arrow}>↓</Text>
-        <Text style={styles.route}>{request.destination}</Text>
+        <Text style={styles.route}>{request.destination.label}</Text>
         <View style={styles.stats}>
-          <Stat label="Distance" value={`${estimate.distanceKm} km`} />
-          <Stat label="Walk time" value={`${estimate.walkingMinutes} min`} />
-          <Stat label="Booked" value={request.duration} />
+          <Stat label="Distance" value={estimate ? `${estimate.distanceKm} km` : 'Server'} />
+          <Stat label="Walk time" value={estimate ? `${estimate.walkingMinutes} min` : 'Server'} />
+          <Stat label="Booked" value={formatDuration(request.durationMinutes)} />
         </View>
         <View style={styles.pills}>
           <Pill label={request.language} selected />
@@ -37,18 +38,24 @@ export function ReviewScreen({
           ))}
         </View>
         <View style={styles.priceBox}>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Guide fee</Text>
-            <Text style={styles.priceValue}>${estimate.guideFee}</Text>
-          </View>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>LiveWalk service</Text>
-            <Text style={styles.priceValue}>${estimate.platformFee}</Text>
-          </View>
-          <View style={[styles.priceRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Estimated total</Text>
-            <Text style={styles.totalValue}>${estimate.total}</Text>
-          </View>
+          {estimate ? (
+            <>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Guide fee</Text>
+                <Text style={styles.priceValue}>${estimate.guideFee}</Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>LiveWalk service</Text>
+                <Text style={styles.priceValue}>${estimate.platformFee}</Text>
+              </View>
+              <View style={[styles.priceRow, styles.totalRow]}>
+                <Text style={styles.totalLabel}>Estimated total</Text>
+                <Text style={styles.totalValue}>${estimate.total}</Text>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.estimatePending}>Server estimate appears after this request is created.</Text>
+          )}
         </View>
       </Card>
       <View style={styles.actions}>
@@ -72,5 +79,6 @@ const styles = StyleSheet.create({
   totalRow: { borderTopWidth: 1, borderTopColor: colors.line, marginTop: 8, paddingTop: 12 },
   totalLabel: { color: colors.ink, fontWeight: '900', fontSize: 16 },
   totalValue: { color: colors.ink, fontWeight: '900', fontSize: 24 },
+  estimatePending: { color: colors.muted, fontWeight: '800', lineHeight: 20 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 18 },
 });

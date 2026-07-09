@@ -1,10 +1,10 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
-import { defaultRequest, estimateRequest } from './src/data/mock';
+import { defaultRequest } from './src/data/mock';
 import { useSession } from './src/hooks/useSession';
 import { API_BASE } from './src/api';
 import { AuthProvider, useAuth } from './src/auth/AuthContext';
@@ -35,8 +35,6 @@ function TravelerApp() {
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [request, setRequest] = useState<WalkRequest>(defaultRequest);
   const scrollRef = useRef<ScrollView>(null);
-  const estimate = useMemo(() => estimateRequest(request), [request]);
-
   const currentIndex = screenOrder.indexOf(screen);
   const isFirstScreen = currentIndex === 0;
   const isLastScreen = currentIndex === screenOrder.length - 1;
@@ -123,9 +121,9 @@ function TravelerApp() {
               <>
                 {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
                 {screen === 'request' ? <RequestScreen request={request} onChange={setRequest} onReview={() => navigateTo('review')} /> : null}
-                {screen === 'review' ? <ReviewScreen request={request} estimate={estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
+                {screen === 'review' ? <ReviewScreen request={request} estimate={remoteRequest?.estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
                 {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} /> : null}
-                {screen === 'confirmed' ? <ConfirmedScreen request={request} estimate={estimate} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
+                {screen === 'confirmed' ? <ConfirmedScreen request={request} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
                 {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
                 {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
               </>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createWalkRequest, getSessionStatus, getWalkRequest, health, sendSessionMessage } from '../api';
 import type { LiveSession, MarketplaceRequest, Screen, SessionMessage, WalkRequest } from '../types';
 
@@ -22,7 +22,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     [request?.sessionId, request?.status],
   );
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     await health();
     setApiOnline(true);
     setApiNote('Backend connected');
@@ -43,7 +43,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     }
 
     return data.request;
-  };
+  }, [request?.id, currentScreen, onAccepted]);
 
   useEffect(() => {
     if (!enabled) {
@@ -69,9 +69,9 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
       active = false;
       clearInterval(timer);
     };
-  }, [enabled, request?.id, currentScreen]);
+  }, [enabled, refresh]);
 
-  const submitRequest = async () => {
+  const submitRequest = useCallback(async () => {
     setBusy(true);
     setApiNote('Sending request to guide marketplace…');
     try {
@@ -87,9 +87,9 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     } finally {
       setBusy(false);
     }
-  };
+  }, [localRequest]);
 
-  const joinLive = async () => {
+  const joinLive = useCallback(async () => {
     if (!guideHasStartedLive || !request?.sessionId) return false;
     try {
       const data = await getSessionStatus(request.sessionId);
@@ -97,21 +97,21 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
       setLiveSession(data.session);
     } catch {}
     return true;
-  };
+  }, [guideHasStartedLive, request?.sessionId]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!request?.sessionId) return;
     await sendSessionMessage(request.sessionId, text);
     const data = await getSessionStatus(request.sessionId);
     setMessages(data.messages);
     setLiveSession(data.session);
-  };
+  }, [request?.sessionId]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setRequest(undefined);
     setMessages([]);
     setLiveSession(undefined);
-  };
+  }, []);
 
   return {
     request,

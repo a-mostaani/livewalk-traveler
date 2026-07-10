@@ -31,7 +31,7 @@ const screenLabels: Record<Screen, string> = {
 };
 
 function TravelerApp() {
-  const { user } = useAuth();
+  const { user, busy: authBusy } = useAuth();
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [request, setRequest] = useState<WalkRequest>(defaultRequest);
   const scrollRef = useRef<ScrollView>(null);
@@ -116,7 +116,13 @@ function TravelerApp() {
             })}
           </View> : null}
           <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator>
-            {!user ? (
+            {authBusy ? (
+              <View style={styles.authGate}>
+                <Text style={styles.authGateKicker}>Account</Text>
+                <Text style={styles.authGateTitle}>Restoring your session…</Text>
+                <Text style={styles.authGateText}>Checking saved login before showing the app.</Text>
+              </View>
+            ) : !user ? (
               <AuthScreen />
             ) : (
               <>
@@ -145,6 +151,10 @@ function TravelerApp() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.cream },
   appShell: { flex: 1, backgroundColor: colors.cream },
+  authGate: { backgroundColor: colors.white, borderRadius: 28, borderWidth: 1, borderColor: colors.line, padding: 24, gap: 8 },
+  authGateKicker: { color: colors.gold, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  authGateTitle: { color: colors.ink, fontSize: 26, fontWeight: '900', letterSpacing: -0.7 },
+  authGateText: { color: colors.muted, fontWeight: '700', lineHeight: 20 },
   appHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 6 },
   logoMini: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.68 },

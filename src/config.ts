@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 
 type LiveWalkExtra = {
   apiBaseUrl?: string;
+  mapboxPublicToken?: string;
 };
 
 function getLiveWalkExtra(): LiveWalkExtra {
@@ -14,4 +15,7 @@ function cleanApiBaseUrl(value: string | undefined): string {
   return cleaned;
 }
 
-export const API_BASE = cleanApiBaseUrl(getLiveWalkExtra().apiBaseUrl);
+const liveWalkExtra = getLiveWalkExtra();
+
+export const API_BASE = cleanApiBaseUrl(liveWalkExtra.apiBaseUrl);
+export const MAPBOX_PUBLIC_TOKEN = liveWalkExtra.mapboxPublicToken?.trim() ?? '';

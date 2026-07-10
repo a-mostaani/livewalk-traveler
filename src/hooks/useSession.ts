@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createWalkRequest, getSessionStatus, getWalkRequest, health, sendSessionMessage } from '../api';
-import type { MarketplaceRequest, Screen, SessionMessage, WalkRequest } from '../types';
+import type { LiveSession, MarketplaceRequest, Screen, SessionMessage, WalkRequest } from '../types';
 
 type UseSessionArgs = {
   enabled: boolean;
@@ -12,6 +12,7 @@ type UseSessionArgs = {
 export function useSession({ enabled, localRequest, currentScreen, onAccepted }: UseSessionArgs) {
   const [request, setRequest] = useState<MarketplaceRequest | undefined>();
   const [messages, setMessages] = useState<SessionMessage[]>([]);
+  const [liveSession, setLiveSession] = useState<LiveSession | undefined>();
   const [apiOnline, setApiOnline] = useState(false);
   const [apiNote, setApiNote] = useState('Checking backend…');
   const [busy, setBusy] = useState(false);
@@ -29,6 +30,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     if (!request?.id) return undefined;
     const data = await getWalkRequest(request.id);
     setRequest(data.request);
+    if (data.session) setLiveSession(data.session);
 
     if ((data.request.status === 'accepted' || data.request.status === 'live') && currentScreen === 'matching') {
       onAccepted();
@@ -37,6 +39,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     if (data.request.sessionId) {
       const session = await getSessionStatus(data.request.sessionId);
       setMessages(session.messages);
+      setLiveSession(session.session);
     }
 
     return data.request;
@@ -91,6 +94,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     try {
       const data = await getSessionStatus(request.sessionId);
       setMessages(data.messages);
+      setLiveSession(data.session);
     } catch {}
     return true;
   };
@@ -100,15 +104,18 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     await sendSessionMessage(request.sessionId, text);
     const data = await getSessionStatus(request.sessionId);
     setMessages(data.messages);
+    setLiveSession(data.session);
   };
 
   const reset = () => {
     setRequest(undefined);
     setMessages([]);
+    setLiveSession(undefined);
   };
 
   return {
     request,
+    liveSession,
     messages,
     apiOnline,
     apiNote,

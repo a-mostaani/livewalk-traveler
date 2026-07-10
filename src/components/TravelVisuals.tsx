@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, colors } from './Primitives';
+import type { MarketplaceRequest, SessionLocation } from '../types';
 
 export function BrandMark() {
   return (
@@ -76,6 +77,109 @@ export function ProgressRail() {
   );
 }
 
+type LiveMapProps = {
+  location?: SessionLocation | null;
+  request?: MarketplaceRequest;
+  mapboxToken: string;
+};
+
+function numeric(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function coordinate(location?: { lat?: number; lng?: number } | null) {
+  if (!numeric(location?.lat) || !numeric(location?.lng)) return undefined;
+  return { lat: location.lat, lng: location.lng };
+}
+
+function pin(size: 's' | 'l', label: string, color: string, lng: number, lat: number) {
+  return `pin-${size}-${label}+${color}(${lng.toFixed(5)},${lat.toFixed(5)})`;
+}
+
+function buildMapboxImageUrl({ location, request, mapboxToken }: LiveMapProps) {
+  const guide = coordinate(location);
+  const origin = coordinate(request?.origin);
+  const destination = coordinate(request?.destination);
+  if (!guide || !mapboxToken) return undefined;
+
+  const overlays = [
+    origin ? pin('s', 'a', '0F766E', origin.lng, origin.lat) : undefined,
+    destination ? pin('s', 'b', '061826', destination.lng, destination.lat) : undefined,
+    pin('l', 'g', '2A8CFF', guide.lng, guide.lat),
+  ].filter(Boolean).join(',');
+  const viewport = origin && destination ? 'auto' : `${guide.lng.toFixed(5)},${guide.lat.toFixed(5)},15,0`;
+  return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays}/${viewport}/600x360@2x?access_token=${encodeURIComponent(mapboxToken)}`;
+}
+
+export function LiveGuideMap({ location, request, mapboxToken }: LiveMapProps) {
+  const guide = coordinate(location);
+  const imageUrl = buildMapboxImageUrl({ location, request, mapboxToken });
+
+  if (!guide) {
+    return (
+      <View style={[styles.liveMap, styles.liveMapWaiting]}>
+        <Ionicons name="locate-outline" size={34} color={colors.blue} />
+        <Text style={styles.liveMapTitle}>Waiting for guide GPS</Text>
+        <Text style={styles.liveMapText}>The map will switch on as soon as the Guide APK publishes latitude and longitude for this live session.</Text>
+      </View>
+    );
+  }
+
+  if (!imageUrl) {
+    return (
+      <View style={[styles.liveMap, styles.liveMapWaiting]}>
+        <Ionicons name="map-outline" size={34} color={colors.blue} />
+        <Text style={styles.liveMapTitle}>Map token missing</Text>
+        <Text style={styles.liveMapText}>Live coordinates are available, but the Mapbox public token is not configured for this build.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.liveMap}>
+      <Image source={{ uri: imageUrl }} style={styles.mapImage} resizeMode="cover" />
+      <View style={styles.mapOverlay}>
+        <View style={styles.liveDot} />
+        <Text style={styles.mapOverlayText}>Guide GPS live</Text>
+      </View>
+    </View>
+  );
+}
+
+export function LiveProgressRail({
+  progress,
+  etaLabel,
+  distanceLabel,
+  originLabel,
+  destinationLabel,
+}: {
+  progress?: number;
+  etaLabel: string;
+  distanceLabel: string;
+  originLabel?: string;
+  destinationLabel?: string;
+}) {
+  const pct = numeric(progress) ? Math.round(Math.max(0, Math.min(1, progress)) * 100) : undefined;
+  return (
+    <Card style={styles.progressCard}>
+      <View style={styles.progressHeader}>
+        <View>
+          <Text style={styles.progressTitle}>Walk progress</Text>
+          <Text style={styles.progressMeta}>{etaLabel} • {distanceLabel}</Text>
+        </View>
+        <Text style={styles.progressPct}>{pct === undefined ? 'GPS' : `${pct}%`}</Text>
+      </View>
+      <View style={styles.track}>
+        <View style={[styles.trackFill, { width: `${pct ?? 0}%` }]} />
+      </View>
+      <View style={styles.routeStops}>
+        <Text style={styles.stopText} numberOfLines={1}>{originLabel ?? 'Origin'}</Text>
+        <Text style={styles.stopText} numberOfLines={1}>{destinationLabel ?? 'Destination'}</Text>
+      </View>
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
   logo: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
@@ -138,4 +242,31 @@ const styles = StyleSheet.create({
   trackFill: { width: '62%', height: '100%', backgroundColor: colors.green, borderRadius: 999 },
   routeStops: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   stopText: { color: colors.muted, fontSize: 11, fontWeight: '700' },
+  liveMap: {
+    height: 208,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: colors.blueSoft,
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(13,77,102,0.16)',
+  },
+  liveMapWaiting: { alignItems: 'center', justifyContent: 'center', padding: 24 },
+  liveMapTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: 10 },
+  liveMapText: { color: colors.muted, textAlign: 'center', lineHeight: 20, fontWeight: '700', marginTop: 6 },
+  mapImage: { width: '100%', height: '100%' },
+  mapOverlay: {
+    position: 'absolute',
+    left: 14,
+    top: 14,
+    backgroundColor: 'rgba(6,24,38,0.82)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mapOverlayText: { color: colors.white, fontWeight: '900', fontSize: 12 },
+  progressMeta: { color: colors.muted, fontWeight: '700', marginTop: 3, fontSize: 12 },
 });

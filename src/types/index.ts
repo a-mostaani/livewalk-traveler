@@ -50,6 +50,15 @@ export type MarketplaceGuide = {
   avatar?: string;
 };
 
+export type SessionLocation = {
+  lat?: number;
+  lng?: number;
+  accuracy?: number | null;
+  timestamp?: string | null;
+  label?: string;
+  progress?: number | null;
+};
+
 export type MarketplaceRequest = {
   id: string;
   travelerName: string;
@@ -66,6 +75,7 @@ export type MarketplaceRequest = {
   sessionId: string | null;
   createdAt: string;
   updatedAt: string;
+  location?: SessionLocation | null;
 };
 
 export type SessionMessage = {
@@ -82,7 +92,7 @@ export type LiveSession = {
   requestId: string;
   status: 'ready' | 'live';
   startedAt?: string | null;
-  location?: { label?: string; progress?: number } | null;
+  location?: SessionLocation | null;
 };
 
 export type AuthUser = {

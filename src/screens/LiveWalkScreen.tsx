@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, colors } from '../components/Primitives';
-import { MiniRouteMap, ProgressRail, VideoPlaceholder } from '../components/TravelVisuals';
-import { MarketplaceRequest, SessionMessage } from '../api';
+import { LiveGuideMap, LiveProgressRail, VideoPlaceholder } from '../components/TravelVisuals';
+import { MAPBOX_PUBLIC_TOKEN } from '../config';
+import { LiveSession, MarketplaceRequest, SessionMessage } from '../api';
+import type { SessionLocation } from '../types';
 
 export function LiveWalkScreen({
   remoteRequest,
+  liveSession,
   messages,
   onSendMessage,
   onEnd,
 }: {
   remoteRequest?: MarketplaceRequest;
+  liveSession?: LiveSession;
   messages: SessionMessage[];
   onSendMessage: (text: string) => Promise<void>;
   onEnd: () => void;
@@ -23,6 +27,14 @@ export function LiveWalkScreen({
   const liveControlNote = sessionReady
     ? actionNote
     : 'Controls unlock after the guide starts the shared live session.';
+  const guideLocation = liveSession?.location ?? remoteRequest?.location ?? null;
+  const guideCoordinates = readCoordinates(guideLocation);
+  const progressState = deriveProgress(guideLocation, remoteRequest);
+  const accuracyLabel = formatAccuracy(guideLocation?.accuracy);
+  const timestampLabel = formatTimestamp(guideLocation?.timestamp);
+  const coordinatesLabel = guideCoordinates
+    ? `${guideCoordinates.lat.toFixed(5)}, ${guideCoordinates.lng.toFixed(5)}`
+    : 'Waiting for live coordinates';
 
   const sendSessionEvent = async (text: string, success: string) => {
     if (!sessionReady) {
@@ -97,8 +109,19 @@ export function LiveWalkScreen({
           </View>
           <Ionicons name="navigate-circle" size={28} color={colors.blue} />
         </View>
-        <MiniRouteMap compact />
-        <ProgressRail />
+        <LiveGuideMap location={guideLocation} request={remoteRequest} mapboxToken={MAPBOX_PUBLIC_TOKEN} />
+        <View style={styles.gpsMetaGrid}>
+          <Metric label="Guide coordinates" value={coordinatesLabel} />
+          <Metric label="Accuracy" value={accuracyLabel} />
+          <Metric label="Last GPS update" value={timestampLabel} />
+        </View>
+        <LiveProgressRail
+          progress={progressState.progress}
+          etaLabel={progressState.etaLabel}
+          distanceLabel={progressState.distanceLabel}
+          originLabel={remoteRequest?.origin.label}
+          destinationLabel={remoteRequest?.destination.label}
+        />
       </Card>
       <Card style={styles.panel}>
         <View style={styles.panelHeader}>
@@ -131,6 +154,90 @@ export function LiveWalkScreen({
   );
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
+    </View>
+  );
+}
+
+function numeric(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function readCoordinates(location?: SessionLocation | null) {
+  if (!numeric(location?.lat) || !numeric(location?.lng)) return undefined;
+  return { lat: location.lat, lng: location.lng };
+}
+
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const radius = 6371000;
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * radius * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function projectProgress(
+  point: { lat: number; lng: number },
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number },
+) {
+  const metersPerLat = 111320;
+  const metersPerLng = 111320 * Math.cos(origin.lat * Math.PI / 180);
+  const ax = 0;
+  const ay = 0;
+  const bx = (destination.lng - origin.lng) * metersPerLng;
+  const by = (destination.lat - origin.lat) * metersPerLat;
+  const px = (point.lng - origin.lng) * metersPerLng;
+  const py = (point.lat - origin.lat) * metersPerLat;
+  const lengthSquared = (bx - ax) ** 2 + (by - ay) ** 2;
+  if (lengthSquared < 1) return undefined;
+  return clamp01(((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / lengthSquared);
+}
+
+function deriveProgress(location?: SessionLocation | null, request?: MarketplaceRequest) {
+  const guide = readCoordinates(location);
+  const origin = request?.origin;
+  const destination = request?.destination;
+  let progress = numeric(location?.progress) ? clamp01(location.progress) : undefined;
+  let distanceLabel = 'Waiting for route GPS';
+
+  if (guide && origin && destination) {
+    progress = projectProgress(guide, origin, destination) ?? progress;
+    const remainingMeters = distanceMeters(guide, destination);
+    distanceLabel = remainingMeters >= 1000
+      ? `${(remainingMeters / 1000).toFixed(1)} km to destination`
+      : `${Math.round(remainingMeters)} m to destination`;
+  }
+
+  const durationMinutes = request?.durationMinutes;
+  const etaLabel = numeric(progress) && numeric(durationMinutes)
+    ? `~${Math.max(1, Math.ceil((1 - progress) * durationMinutes))} min remaining`
+    : 'ETA after first GPS fix';
+
+  return { progress, etaLabel, distanceLabel };
+}
+
+function formatAccuracy(accuracy: number | null | undefined) {
+  return numeric(accuracy) ? `±${Math.round(accuracy)} m` : 'Waiting';
+}
+
+function formatTimestamp(timestamp: string | null | undefined) {
+  if (!timestamp) return 'Waiting';
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return 'Just updated';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, gap: 10 },
   kicker: { color: colors.gold, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
@@ -161,6 +268,10 @@ const styles = StyleSheet.create({
   panelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12 },
   panelTitle: { color: colors.ink, fontSize: 18, fontWeight: '900' },
   panelSub: { color: colors.muted, fontWeight: '700', marginTop: 2 },
+  gpsMetaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  metric: { flexBasis: '31%', flexGrow: 1, backgroundColor: colors.cream, borderRadius: 14, padding: 10 },
+  metricLabel: { color: colors.muted, fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.3 },
+  metricValue: { color: colors.ink, fontWeight: '900', marginTop: 4, fontSize: 12 },
   captionList: { gap: 8 },
   captionBubble: { backgroundColor: colors.cream, borderRadius: 16, padding: 12 },
   captionText: { color: colors.ink, lineHeight: 20, fontWeight: '700' },

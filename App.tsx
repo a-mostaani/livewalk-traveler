@@ -42,6 +42,7 @@ function TravelerApp() {
   const session = useSession({ enabled: Boolean(user), localRequest: request, currentScreen: screen, onAccepted: () => navigateTo('confirmed') });
   const remoteRequest = session.request;
   const messages = session.messages;
+  const liveSession = session.liveSession;
   const apiOnline = session.apiOnline;
   const apiNote = session.apiNote;
   const busy = session.busy;
@@ -124,7 +125,7 @@ function TravelerApp() {
                 {screen === 'review' ? <ReviewScreen request={request} estimate={remoteRequest?.estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
                 {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} /> : null}
                 {screen === 'confirmed' ? <ConfirmedScreen request={request} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
-                {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
+                {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} liveSession={liveSession} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
                 {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
               </>
             )}

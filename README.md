@@ -49,6 +49,21 @@ npm run android
 
 Expo will open the app on the running emulator.
 
+
+## Native/dev build readiness
+
+Pre-LW-10 prepares the Traveler app to receive native LiveKit video/audio. This app now includes `expo-dev-client` and an `eas.json` with development/internal Android APK profiles.
+
+For local native development after native media modules are added:
+
+```bash
+npm install
+npx eas build --profile development --platform android
+npx expo start --dev-client
+```
+
+For the current demo APKs, keep using the published installable Android builds from the LiveWalk APK download page. This gate should not change current Traveler demo behavior.
+
 ## Useful development commands
 
 ```bash

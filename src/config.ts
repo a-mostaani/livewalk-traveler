@@ -1,8 +1,10 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 type LiveWalkExtra = {
   apiBaseUrl?: string;
-  mapboxPublicToken?: string;
+  mapboxTokenWeb?: string;
+  mapboxTokenMobile?: string;
 };
 
 function getLiveWalkExtra(): LiveWalkExtra {
@@ -18,4 +20,6 @@ function cleanApiBaseUrl(value: string | undefined): string {
 const liveWalkExtra = getLiveWalkExtra();
 
 export const API_BASE = cleanApiBaseUrl(liveWalkExtra.apiBaseUrl);
-export const MAPBOX_PUBLIC_TOKEN = liveWalkExtra.mapboxPublicToken?.trim() ?? '';
+export const MAPBOX_TOKEN_WEB = liveWalkExtra.mapboxTokenWeb?.trim() ?? '';
+export const MAPBOX_TOKEN_MOBILE = liveWalkExtra.mapboxTokenMobile?.trim() ?? '';
+export const MAPBOX_TOKEN = Platform.OS === 'web' ? MAPBOX_TOKEN_WEB : MAPBOX_TOKEN_MOBILE;

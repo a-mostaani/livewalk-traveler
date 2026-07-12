@@ -5,7 +5,6 @@ declare const process: {
 };
 
 const DEFAULT_API_BASE_URL = 'https://rendezvous-livewalk-api.webpeter.com';
-const DEFAULT_MAPBOX_PUBLIC_TOKEN = 'pk.eyJ1IjoiYS1tb3N0IiwiYSI6ImNtcmVscGRrZzBnZGYyeXNjNzEzdTFnbW0ifQ.xJjJX7Ruzo19l6hTHcoxCQ';
 
 function cleanUrl(value: string): string {
   return value.replace(/\/+$/, '');
@@ -15,7 +14,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const apiBaseUrl = cleanUrl(
     process.env.LIVEWALK_API_BASE_URL ?? process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL,
   );
-  const mapboxPublicToken = (process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? DEFAULT_MAPBOX_PUBLIC_TOKEN).trim();
+  const mapboxTokenWeb = process.env.MAPBOX_TOKEN_WEB?.trim() ?? '';
+  const mapboxTokenMobile = process.env.MAPBOX_TOKEN_MOBILE?.trim() ?? '';
 
   return {
     ...config,
@@ -41,7 +41,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       ...config.extra,
       apiBaseUrl,
-      mapboxPublicToken,
+      mapboxTokenWeb,
+      mapboxTokenMobile,
     },
   };
 };

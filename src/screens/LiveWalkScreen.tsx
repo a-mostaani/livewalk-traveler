@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, colors } from '../components/Primitives';
 import { LiveGuideMap, LiveProgressRail, VideoPlaceholder } from '../components/TravelVisuals';
-import { MAPBOX_PUBLIC_TOKEN } from '../config';
+import { MAPBOX_TOKEN } from '../config';
 import { LiveSession, MarketplaceRequest, SessionMessage } from '../api';
 import type { SessionLocation } from '../types';
 
@@ -109,7 +109,7 @@ export function LiveWalkScreen({
           </View>
           <Ionicons name="navigate-circle" size={28} color={colors.blue} />
         </View>
-        <LiveGuideMap location={guideLocation} request={remoteRequest} mapboxToken={MAPBOX_PUBLIC_TOKEN} />
+        <LiveGuideMap location={guideLocation} request={remoteRequest} mapboxToken={MAPBOX_TOKEN} />
         <View style={styles.gpsMetaGrid}>
           <Metric label="Guide coordinates" value={coordinatesLabel} />
           <Metric label="Accuracy" value={accuracyLabel} />

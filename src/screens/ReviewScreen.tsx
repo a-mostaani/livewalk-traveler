@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Header, Pill, Stat, colors } from '../components/Primitives';
 import { MiniRouteMap } from '../components/TravelVisuals';
 import { formatDuration } from '../format';
@@ -10,13 +10,19 @@ export function ReviewScreen({
   estimate,
   onBack,
   onFindGuide,
+  onRetryEstimate,
   busy = false,
+  estimateBusy = false,
+  estimateError,
 }: {
   request: WalkRequest;
   estimate?: Estimate;
   onBack: () => void;
   onFindGuide: () => void;
+  onRetryEstimate: () => void;
   busy?: boolean;
+  estimateBusy?: boolean;
+  estimateError?: string;
 }) {
   return (
     <View>
@@ -27,8 +33,8 @@ export function ReviewScreen({
         <Text style={styles.arrow}>↓</Text>
         <Text style={styles.route}>{request.destination.label}</Text>
         <View style={styles.stats}>
-          <Stat label="Distance" value={estimate ? `${estimate.distanceKm} km` : 'Server'} />
-          <Stat label="Walk time" value={estimate ? `${estimate.walkingMinutes} min` : 'Server'} />
+          <Stat label="Distance" value={estimate ? `${estimate.distanceKm} km` : (estimateBusy ? '…' : 'Pending')} />
+          <Stat label="Walk time" value={estimate ? `${estimate.walkingMinutes} min` : (estimateBusy ? '…' : 'Pending')} />
           <Stat label="Booked" value={formatDuration(request.durationMinutes)} />
         </View>
         <View style={styles.pills}>
@@ -53,14 +59,24 @@ export function ReviewScreen({
                 <Text style={styles.totalValue}>${estimate.total}</Text>
               </View>
             </>
+          ) : estimateBusy ? (
+            <View style={styles.quoteState}>
+              <ActivityIndicator color={colors.blue} />
+              <Text style={styles.estimatePending}>Calculating your server quote…</Text>
+            </View>
+          ) : estimateError ? (
+            <View style={styles.quoteState}>
+              <Text style={styles.estimateError}>{estimateError}</Text>
+              <Button label="Retry quote" variant="secondary" onPress={onRetryEstimate} />
+            </View>
           ) : (
-            <Text style={styles.estimatePending}>Server estimate appears after this request is created.</Text>
+            <Text style={styles.estimatePending}>Your quote will appear here before you send the request.</Text>
           )}
         </View>
       </Card>
       <View style={styles.actions}>
         <Button label="Edit" variant="secondary" onPress={onBack} style={{ flex: 1 }} />
-        <Button label={busy ? "Sending…" : "Send to guides"} icon="cloud-upload" onPress={onFindGuide} disabled={busy} style={{ flex: 1 }} />
+        <Button label={busy ? "Sending…" : "Send to guides"} icon="cloud-upload" onPress={onFindGuide} disabled={busy || estimateBusy || !estimate || Boolean(estimateError)} style={{ flex: 1 }} />
       </View>
     </View>
   );
@@ -80,5 +96,7 @@ const styles = StyleSheet.create({
   totalLabel: { color: colors.ink, fontWeight: '900', fontSize: 16 },
   totalValue: { color: colors.ink, fontWeight: '900', fontSize: 24 },
   estimatePending: { color: colors.muted, fontWeight: '800', lineHeight: 20 },
+  quoteState: { gap: 12 },
+  estimateError: { color: colors.danger, fontWeight: '800', lineHeight: 20 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 18 },
 });

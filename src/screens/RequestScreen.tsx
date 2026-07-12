@@ -1,8 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Field, Header, Pill, Button, Card, colors } from '../components/Primitives';
+import { PlaceSearchField } from '../components/PlaceSearchField';
 import { interestOptions, languageOptions } from '../data/mock';
-import { WalkRequest } from '../types';
+import { hasRouteCoordinates, WalkRequest } from '../types';
 
 export function RequestScreen({
   request,
@@ -26,16 +27,18 @@ export function RequestScreen({
     onChange({ ...request, durationMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 45 });
   };
 
+  const routeReady = hasRouteCoordinates(request);
+
   return (
     <View>
       <Header
         kicker="New request"
         title="Where should your guide walk?"
-        body="Start with clear route labels. Demo coordinates are fixed for now, and the backend calculates the estimate when you send."
+        body="Search and select both places so your route has real map coordinates before you review it."
       />
       <Card>
-        <Field label="Starting point" value={request.origin.label} onChangeText={(label) => onChange({ ...request, origin: { ...request.origin, label } })} />
-        <Field label="Destination" value={request.destination.label} onChangeText={(label) => onChange({ ...request, destination: { ...request.destination, label } })} />
+        <PlaceSearchField label="Starting point" value={request.origin} onChange={(origin) => onChange({ ...request, origin })} />
+        <PlaceSearchField label="Destination" value={request.destination} onChange={(destination) => onChange({ ...request, destination })} />
         <View style={styles.row}>
           <View style={styles.half}>
             <Field label="Start ISO time" value={request.scheduledStart} onChangeText={(scheduledStart) => onChange({ ...request, scheduledStart })} />
@@ -62,7 +65,8 @@ export function RequestScreen({
           ))}
         </View>
       </Card>
-      <Button label="Review route" icon="map" onPress={onReview} style={{ marginTop: 18 }} />
+      {!routeReady ? <Text style={styles.routeHint}>Select one Mapbox result for both points to continue.</Text> : null}
+      <Button label="Review route" icon="map" onPress={onReview} disabled={!routeReady} style={{ marginTop: 18 }} />
     </View>
   );
 }
@@ -72,4 +76,5 @@ const styles = StyleSheet.create({
   half: { flex: 1 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, marginBottom: 14 },
   label: { color: colors.ink, fontSize: 13, fontWeight: '900', marginTop: 4 },
+  routeHint: { color: colors.muted, fontSize: 13, fontWeight: '800', lineHeight: 19, marginTop: 14 },
 });

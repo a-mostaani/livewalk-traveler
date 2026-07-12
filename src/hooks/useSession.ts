@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createWalkRequest, getSessionStatus, getWalkRequest, health, sendSessionMessage } from '../api';
-import type { LiveSession, MarketplaceRequest, Screen, SessionMessage, WalkRequest } from '../types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createWalkRequest, estimateWalkRequest, getSessionStatus, getWalkRequest, health, sendSessionMessage } from '../api';
+import { hasRouteCoordinates, type Estimate, type LiveSession, type MarketplaceRequest, type Screen, type SessionMessage, type WalkRequest } from '../types';
 
 type UseSessionArgs = {
   enabled: boolean;
@@ -16,6 +16,10 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
   const [apiOnline, setApiOnline] = useState(false);
   const [apiNote, setApiNote] = useState('Checking backend…');
   const [busy, setBusy] = useState(false);
+  const [estimate, setEstimate] = useState<Estimate | undefined>();
+  const [estimateBusy, setEstimateBusy] = useState(false);
+  const [estimateError, setEstimateError] = useState<string | undefined>();
+  const estimateSequence = useRef(0);
 
   const guideHasStartedLive = useMemo(
     () => Boolean(request?.sessionId && request?.status === 'live'),
@@ -71,7 +75,52 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     };
   }, [enabled, refresh]);
 
+  const clearEstimate = useCallback(() => {
+    estimateSequence.current += 1;
+    setEstimate(undefined);
+    setEstimateBusy(false);
+    setEstimateError(undefined);
+  }, []);
+
+  const quoteRequest = useCallback(async () => {
+    const sequence = estimateSequence.current + 1;
+    estimateSequence.current = sequence;
+    if (!hasRouteCoordinates(localRequest)) {
+      setEstimate(undefined);
+      setEstimateError('Select a real place for both route points before requesting a quote.');
+      return undefined;
+    }
+
+    setEstimateBusy(true);
+    setEstimateError(undefined);
+    setEstimate(undefined);
+    try {
+      const data = await estimateWalkRequest(localRequest);
+      if (estimateSequence.current !== sequence) return undefined;
+      setEstimate(data.estimate);
+      setApiOnline(true);
+      setApiNote('Route quote ready');
+      return data.estimate;
+    } catch (error) {
+      if (estimateSequence.current !== sequence) return undefined;
+      setEstimate(undefined);
+      setEstimateError(error instanceof Error ? error.message : 'Could not calculate your route quote.');
+      return undefined;
+    } finally {
+      if (estimateSequence.current === sequence) setEstimateBusy(false);
+    }
+  }, [localRequest]);
+
+  useEffect(() => {
+    if (!enabled || currentScreen !== 'review') return;
+    void quoteRequest();
+  }, [currentScreen, enabled, quoteRequest]);
+
   const submitRequest = useCallback(async () => {
+    if (!hasRouteCoordinates(localRequest) || !estimate || estimateBusy || estimateError) {
+      setApiNote('Wait for a valid route quote before sending this request.');
+      return false;
+    }
     setBusy(true);
     setApiNote('Sending request to guide marketplace…');
     try {
@@ -87,7 +136,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     } finally {
       setBusy(false);
     }
-  }, [localRequest]);
+  }, [estimate, estimateBusy, estimateError, localRequest]);
 
   const joinLive = useCallback(async () => {
     if (!guideHasStartedLive || !request?.sessionId) return false;
@@ -108,9 +157,13 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
   }, [request?.sessionId]);
 
   const reset = useCallback(() => {
+    estimateSequence.current += 1;
     setRequest(undefined);
     setMessages([]);
     setLiveSession(undefined);
+    setEstimate(undefined);
+    setEstimateBusy(false);
+    setEstimateError(undefined);
   }, []);
 
   return {
@@ -120,8 +173,13 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     apiOnline,
     apiNote,
     busy,
+    estimate,
+    estimateBusy,
+    estimateError,
     guideHasStartedLive,
     refresh,
+    quoteRequest,
+    clearEstimate,
     submitRequest,
     joinLive,
     sendMessage,

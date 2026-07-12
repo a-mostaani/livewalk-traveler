@@ -13,14 +13,36 @@ export type RequestPoint = {
   lng: number;
 };
 
+export type RequestDraftPoint = {
+  label: string;
+  lat?: number;
+  lng?: number;
+};
+
 export type WalkRequest = {
-  origin: RequestPoint;
-  destination: RequestPoint;
+  origin: RequestDraftPoint;
+  destination: RequestDraftPoint;
   scheduledStart: string;
   durationMinutes: number;
   language: string;
   interests: string[];
 };
+
+export function isRequestPoint(value: RequestDraftPoint): value is RequestPoint {
+  return Boolean(
+    value.label.trim()
+    && Number.isFinite(value.lat)
+    && Number.isFinite(value.lng)
+    && (value.lat as number) >= -90
+    && (value.lat as number) <= 90
+    && (value.lng as number) >= -180
+    && (value.lng as number) <= 180,
+  );
+}
+
+export function hasRouteCoordinates(request: WalkRequest): boolean {
+  return isRequestPoint(request.origin) && isRequestPoint(request.destination);
+}
 
 export type Guide = {
   id: string;

@@ -16,7 +16,7 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { RequestScreen } from './src/screens/RequestScreen';
 import { ReviewScreen } from './src/screens/ReviewScreen';
 import { SummaryScreen } from './src/screens/SummaryScreen';
-import { Screen, WalkRequest } from './src/types';
+import { hasRouteCoordinates, Screen, WalkRequest } from './src/types';
 
 const screenOrder: Screen[] = ['onboarding', 'request', 'review', 'matching', 'confirmed', 'live', 'summary'];
 
@@ -60,6 +60,10 @@ function TravelerApp() {
 
   const goNext = () => {
     if (screen === 'confirmed' && !guideHasStartedLive) return;
+    if (screen === 'request') {
+      openReview();
+      return;
+    }
     navigateTo(isLastScreen ? 'request' : screenOrder[currentIndex + 1]);
   };
   const nextDisabled = screen === 'confirmed' && !guideHasStartedLive;
@@ -69,6 +73,16 @@ function TravelerApp() {
   const submitRequest = async () => {
     const submitted = await session.submitRequest();
     if (submitted) navigateTo('matching');
+  };
+
+  const openReview = () => {
+    if (!hasRouteCoordinates(request)) return;
+    navigateTo('review');
+  };
+
+  const updateRequest = (next: WalkRequest) => {
+    setRequest(next);
+    session.clearEstimate();
   };
 
   const joinLive = async () => {
@@ -127,8 +141,8 @@ function TravelerApp() {
             ) : (
               <>
                 {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
-                {screen === 'request' ? <RequestScreen request={request} onChange={setRequest} onReview={() => navigateTo('review')} /> : null}
-                {screen === 'review' ? <ReviewScreen request={request} estimate={remoteRequest?.estimate} onBack={() => navigateTo('request')} onFindGuide={submitRequest} busy={busy} /> : null}
+                {screen === 'request' ? <RequestScreen request={request} onChange={updateRequest} onReview={openReview} /> : null}
+                {screen === 'review' ? <ReviewScreen request={request} estimate={session.estimate} estimateBusy={session.estimateBusy} estimateError={session.estimateError} onBack={() => navigateTo('request')} onFindGuide={submitRequest} onRetryEstimate={session.quoteRequest} busy={busy} /> : null}
                 {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} /> : null}
                 {screen === 'confirmed' ? <ConfirmedScreen request={request} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
                 {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} liveSession={liveSession} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}

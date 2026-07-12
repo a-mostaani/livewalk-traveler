@@ -1,8 +1,8 @@
 import { Guide, WalkRequest } from '../types';
 
 export const defaultRequest: WalkRequest = {
-  origin: { label: 'Shibuya Station Hachiko Gate', lat: 35.6591, lng: 139.7005 },
-  destination: { label: 'Meiji Shrine forest entrance', lat: 35.6764, lng: 139.6993 },
+  origin: { label: '' },
+  destination: { label: '' },
   scheduledStart: '2026-07-10T10:30:00+09:00',
   durationMinutes: 45,
   language: 'English',

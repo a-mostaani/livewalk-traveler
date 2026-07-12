@@ -1,4 +1,4 @@
-import type { AuthPayload, AuthUser, LiveSession, MarketplaceRequest, SessionMessage, WalkRequest } from './types';
+import type { AuthPayload, AuthUser, Estimate, LiveSession, MarketplaceRequest, SessionMessage, WalkRequest } from './types';
 export type { AuthPayload, AuthUser, LiveSession, MarketplaceGuide, MarketplaceRequest, SessionMessage } from './types';
 
 import { API_BASE } from './config';
@@ -80,6 +80,18 @@ export async function createWalkRequest(request: WalkRequest) {
       durationMinutes: request.durationMinutes,
       language: request.language,
       interests: request.interests,
+    }),
+  });
+}
+
+export async function estimateWalkRequest(request: WalkRequest) {
+  return api<{ ok: true; estimate: Estimate }>('/api/requests/estimate', {
+    method: 'POST',
+    body: JSON.stringify({
+      origin: request.origin,
+      destination: request.destination,
+      scheduledStart: request.scheduledStart,
+      durationMinutes: request.durationMinutes,
     }),
   });
 }

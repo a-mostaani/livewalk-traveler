@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createWalkRequest, estimateWalkRequest, getSessionStatus, getWalkRequest, health, sendSessionMessage } from '../api';
+import { createWalkRequest, endSession, estimateWalkRequest, getSessionStatus, getWalkRequest, health, sendSessionMessage } from '../api';
 import { hasRouteCoordinates, type Estimate, type LiveSession, type MarketplaceRequest, type Screen, type SessionMessage, type WalkRequest } from '../types';
 
 type UseSessionArgs = {
@@ -25,6 +25,10 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     () => Boolean(request?.sessionId && request?.status === 'live'),
     [request?.sessionId, request?.status],
   );
+  const sessionEnded = useMemo(
+    () => request?.status === 'completed' || liveSession?.status === 'ended',
+    [request?.status, liveSession?.status],
+  );
 
   const refresh = useCallback(async () => {
     await health();
@@ -35,6 +39,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     const data = await getWalkRequest(request.id);
     setRequest(data.request);
     if (data.session) setLiveSession(data.session);
+    if (data.request.status === 'completed') setApiNote('Walk complete');
 
     if ((data.request.status === 'accepted' || data.request.status === 'live') && currentScreen === 'matching') {
       onAccepted();
@@ -44,6 +49,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
       const session = await getSessionStatus(data.request.sessionId);
       setMessages(session.messages);
       setLiveSession(session.session);
+      if (session.session.status === 'ended') setApiNote('Walk complete');
     }
 
     return data.request;
@@ -156,6 +162,25 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     setLiveSession(data.session);
   }, [request?.sessionId]);
 
+  const endLive = useCallback(async () => {
+    if (!request?.sessionId) return false;
+    setBusy(true);
+    try {
+      const data = await endSession(request.sessionId);
+      setMessages(data.messages);
+      setLiveSession(data.session);
+      setRequest({ ...request, status: 'completed' });
+      setApiOnline(true);
+      setApiNote('Walk complete');
+      return true;
+    } catch {
+      setApiNote('Could not end the shared walk yet');
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [request]);
+
   const reset = useCallback(() => {
     estimateSequence.current += 1;
     setRequest(undefined);
@@ -177,12 +202,14 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     estimateBusy,
     estimateError,
     guideHasStartedLive,
+    sessionEnded,
     refresh,
     quoteRequest,
     clearEstimate,
     submitRequest,
     joinLive,
     sendMessage,
+    endLive,
     reset,
   };
 }

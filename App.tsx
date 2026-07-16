@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -47,12 +47,20 @@ function TravelerApp() {
   const apiNote = session.apiNote;
   const busy = session.busy;
   const guideHasStartedLive = session.guideHasStartedLive;
+  const sessionEnded = session.sessionEnded;
 
   const navigateTo = (nextScreen: Screen) => {
     if (nextScreen === 'live' && !guideHasStartedLive) return;
     setScreen(nextScreen);
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false }));
   };
+
+  useEffect(() => {
+    if (sessionEnded && screen === 'live') {
+      setScreen('summary');
+      requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false }));
+    }
+  }, [screen, sessionEnded]);
 
   const goPrevious = () => {
     if (!isFirstScreen) navigateTo(screenOrder[currentIndex - 1]);
@@ -145,7 +153,7 @@ function TravelerApp() {
                 {screen === 'review' ? <ReviewScreen request={request} estimate={session.estimate} estimateBusy={session.estimateBusy} estimateError={session.estimateError} onBack={() => navigateTo('request')} onFindGuide={submitRequest} onRetryEstimate={session.quoteRequest} busy={busy} /> : null}
                 {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} /> : null}
                 {screen === 'confirmed' ? <ConfirmedScreen request={request} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
-                {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} liveSession={liveSession} messages={messages} onSendMessage={sendTravelerMessage} onEnd={() => navigateTo('summary')} /> : null}
+                {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} liveSession={liveSession} messages={messages} onSendMessage={sendTravelerMessage} onEnd={session.endLive} /> : null}
                 {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
               </>
             )}

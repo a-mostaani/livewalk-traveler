@@ -92,7 +92,7 @@ export type MarketplaceRequest = {
   language: string;
   interests: string[];
   estimate: Estimate;
-  status: 'pending' | 'accepted' | 'declined' | 'live';
+  status: 'pending' | 'accepted' | 'declined' | 'live' | 'completed';
   guide: MarketplaceGuide | null;
   sessionId: string | null;
   createdAt: string;
@@ -112,8 +112,9 @@ export type SessionMessage = {
 export type LiveSession = {
   id: string;
   requestId: string;
-  status: 'ready' | 'live';
+  status: 'ready' | 'live' | 'ended';
   startedAt?: string | null;
+  endedAt?: string | null;
   location?: SessionLocation | null;
 };
 

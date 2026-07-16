@@ -18,7 +18,7 @@ export function LiveWalkScreen({
   liveSession?: LiveSession;
   messages: SessionMessage[];
   onSendMessage: (text: string) => Promise<void>;
-  onEnd: () => void;
+  onEnd: () => Promise<boolean>;
 }) {
   const [talking, setTalking] = useState(false);
   const [translation, setTranslation] = useState(true);
@@ -71,6 +71,17 @@ export function LiveWalkScreen({
     if (!talking) return;
     setTalking(false);
     void sendSessionEvent('🎙️ Traveler finished talking.', 'Talk status ended.');
+  };
+
+  const endWalk = async () => {
+    if (!sessionReady) return;
+    const ended = await onEnd();
+    if (ended) {
+      setActionNote('Shared walk ended. Preparing your summary.');
+      return;
+    }
+    setActionNote('The walk is still live. Please retry ending it.');
+    Alert.alert('Walk still live', 'We could not end the shared walk. Check your connection and retry.');
   };
 
   return (
@@ -149,7 +160,7 @@ export function LiveWalkScreen({
           <Button label={translation ? 'On' : 'Off'} variant="secondary" onPress={() => setTranslation((value) => !value)} />
         </View>
       </Card>
-      <Button label="End walk" icon="stop-circle" variant="danger" onPress={onEnd} style={{ marginTop: 18 }} />
+      <Button label="End walk" icon="stop-circle" variant="danger" onPress={() => void endWalk()} disabled={!sessionReady} style={{ marginTop: 18 }} />
     </View>
   );
 }

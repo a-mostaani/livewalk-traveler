@@ -35,7 +35,7 @@ npm start
 ```
 
 5. Scan the QR code with Expo Go.
-6. In the app, move through the MVP by tapping the Start/Request/Review/Match/Booked/Live/Summary step labels or the bottom Previous/Next buttons. The main screen area scrolls vertically on smaller Android displays.
+6. The Start/Request/Review/Match/Booked/Live/Summary strip is a read-only booking-progress indicator. Use the persistent Previous/Next buttons and the screen CTAs to move through the MVP. The main screen area scrolls vertically on smaller Android displays.
 
 ### Option B: Android emulator
 1. Install Android Studio and create an Android virtual device.

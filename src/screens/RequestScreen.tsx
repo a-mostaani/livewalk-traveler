@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, marginBottom: 14 },
-  label: { color: colors.ink, fontSize: 13, fontWeight: '900', marginTop: 4 },
-  routeHint: { color: colors.muted, fontSize: 13, fontWeight: '800', lineHeight: 19, marginTop: 14 },
+  label: { color: colors.textPrimary, fontSize: 13, fontWeight: '900', marginTop: 4 },
+  routeHint: { color: colors.textSecondary, fontSize: 13, fontWeight: '800', lineHeight: 19, marginTop: 14 },
 });

@@ -97,14 +97,17 @@ export function LiveWalkScreen({
       <Card style={styles.controlCard}>
         <View style={styles.controlGrid}>
           <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Hold to talk"
+            accessibilityState={{ disabled: !sessionReady, selected: talking }}
             activeOpacity={0.82}
             onPressIn={startTalking}
             onPressOut={stopTalking}
             disabled={!sessionReady}
             style={[styles.holdButton, talking && styles.holdButtonActive, !sessionReady && styles.controlDisabled, styles.controlButton]}
           >
-            <Ionicons name={talking ? 'mic' : 'mic-outline'} size={18} color={talking ? colors.white : colors.ink} />
-            <Text style={[styles.holdButtonText, talking && styles.holdButtonTextActive]}>{talking ? 'Talking…' : 'Hold to talk'}</Text>
+            <Ionicons name={talking ? 'mic' : 'mic-outline'} size={18} color={talking ? colors.onAction : (!sessionReady ? colors.disabledText : colors.textPrimary)} />
+            <Text style={[styles.holdButtonText, !sessionReady && styles.holdButtonTextDisabled, talking && styles.holdButtonTextActive]}>{talking ? 'Talking…' : 'Hold to talk'}</Text>
           </TouchableOpacity>
           <Button label="Message" icon="chatbubble-ellipses" variant="secondary" onPress={sendQuickMessage} disabled={!sessionReady} style={styles.controlButton} />
           <Button label="Stop here" icon="hand-left" variant="secondary" onPress={requestStopHere} disabled={!sessionReady} style={styles.controlButton} />
@@ -118,7 +121,7 @@ export function LiveWalkScreen({
             <Text style={styles.panelTitle}>Map and GPS</Text>
             <Text style={styles.panelSub}>Session state shared with guide APK</Text>
           </View>
-          <Ionicons name="navigate-circle" size={28} color={colors.blue} />
+          <Ionicons name="navigate-circle" size={28} color={colors.action} />
         </View>
         <LiveGuideMap location={guideLocation} request={remoteRequest} mapboxToken={MAPBOX_TOKEN} />
         <View style={styles.gpsMetaGrid}>
@@ -140,7 +143,7 @@ export function LiveWalkScreen({
             <Text style={styles.panelTitle}>Shared messages</Text>
             <Text style={styles.panelSub}>Synced through the backend session room</Text>
           </View>
-          <Ionicons name="chatbubbles" size={25} color={colors.gold} />
+          <Ionicons name="chatbubbles" size={25} color={colors.accentWarm} />
         </View>
         <View style={styles.captionList}>
           {(messages.length ? messages : [{ id: 'empty', text: 'No shared messages yet. Tap Message after joining.', senderName: 'LiveWalk', senderRole: 'system', sessionId: '', createdAt: '' }]).map((message) => (
@@ -251,10 +254,10 @@ function formatTimestamp(timestamp: string | null | undefined) {
 
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, gap: 10 },
-  kicker: { color: colors.gold, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
-  title: { color: colors.ink, fontSize: 22, fontWeight: '900', marginTop: 4, flexShrink: 1 },
-  timerPill: { backgroundColor: colors.ink, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  timerText: { color: colors.white, fontWeight: '900' },
+  kicker: { color: colors.accentWarm, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  title: { color: colors.textPrimary, fontSize: 22, fontWeight: '900', marginTop: 4, flexShrink: 1 },
+  timerPill: { backgroundColor: colors.action, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  timerText: { color: colors.onAction, fontWeight: '900' },
   controlCard: { marginTop: 14 },
   controlGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   controlButton: { flexBasis: '47%', flexGrow: 1 },
@@ -266,25 +269,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.borderStrong,
   },
-  holdButtonActive: { backgroundColor: colors.ink, borderColor: colors.ink },
-  controlDisabled: { opacity: 0.45 },
-  holdButtonText: { color: colors.ink, fontWeight: '800', fontSize: 15 },
-  holdButtonTextActive: { color: colors.white },
-  actionNote: { color: colors.muted, fontWeight: '700', lineHeight: 19, marginTop: 12 },
+  holdButtonActive: { backgroundColor: colors.action, borderColor: colors.action },
+  controlDisabled: { backgroundColor: colors.disabled, borderColor: colors.disabled },
+  holdButtonText: { color: colors.textPrimary, fontWeight: '800', fontSize: 15 },
+  holdButtonTextDisabled: { color: colors.disabledText },
+  holdButtonTextActive: { color: colors.onAction },
+  actionNote: { color: colors.textSecondary, fontWeight: '700', lineHeight: 19, marginTop: 12 },
   panel: { marginTop: 14 },
   panelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12 },
-  panelTitle: { color: colors.ink, fontSize: 18, fontWeight: '900' },
-  panelSub: { color: colors.muted, fontWeight: '700', marginTop: 2 },
+  panelTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '900' },
+  panelSub: { color: colors.textSecondary, fontWeight: '700', marginTop: 2 },
   gpsMetaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  metric: { flexBasis: '31%', flexGrow: 1, backgroundColor: colors.cream, borderRadius: 14, padding: 10 },
-  metricLabel: { color: colors.muted, fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.3 },
-  metricValue: { color: colors.ink, fontWeight: '900', marginTop: 4, fontSize: 12 },
+  metric: { flexBasis: '31%', flexGrow: 1, backgroundColor: colors.surfaceInfo, borderRadius: 14, padding: 10 },
+  metricLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.3 },
+  metricValue: { color: colors.textPrimary, fontWeight: '900', marginTop: 4, fontSize: 12 },
   captionList: { gap: 8 },
-  captionBubble: { backgroundColor: colors.cream, borderRadius: 16, padding: 12 },
-  captionText: { color: colors.ink, lineHeight: 20, fontWeight: '700' },
-  messageFrom: { color: colors.gold, fontWeight: '900', marginBottom: 3, fontSize: 12 },
+  captionBubble: { backgroundColor: colors.surfaceInfo, borderRadius: 16, padding: 12 },
+  captionText: { color: colors.textPrimary, lineHeight: 20, fontWeight: '700' },
+  messageFrom: { color: colors.accentWarm, fontWeight: '900', marginBottom: 3, fontSize: 12 },
 });

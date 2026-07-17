@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createWalkRequest, endSession, estimateWalkRequest, getSessionStatus, getWalkRequest, health, sendSessionMessage } from '../api';
+import { createWalkRequest, endSession, estimateWalkRequest, getSessionStatus, getWalkRequest, getWalkRequests, health, sendSessionMessage } from '../api';
 import { hasRouteCoordinates, type Estimate, type LiveSession, type MarketplaceRequest, type Screen, type SessionMessage, type WalkRequest } from '../types';
+import { getWalkHistoryState, type WalkHistoryState } from '../flow';
 
 type UseSessionArgs = {
   enabled: boolean;
@@ -11,6 +12,10 @@ type UseSessionArgs = {
 
 export function useSession({ enabled, localRequest, currentScreen, onAccepted }: UseSessionArgs) {
   const [request, setRequest] = useState<MarketplaceRequest | undefined>();
+  const [requestHistory, setRequestHistory] = useState<MarketplaceRequest[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyUnavailable, setHistoryUnavailable] = useState(false);
   const [messages, setMessages] = useState<SessionMessage[]>([]);
   const [liveSession, setLiveSession] = useState<LiveSession | undefined>();
   const [apiOnline, setApiOnline] = useState(false);
@@ -29,6 +34,41 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     () => request?.status === 'completed' || liveSession?.status === 'ended',
     [request?.status, liveSession?.status],
   );
+
+  const walkHistoryState = useMemo<WalkHistoryState>(() => {
+    if (historyUnavailable) return 'unavailable';
+    return getWalkHistoryState({
+      isLoading: historyLoading,
+      hasLoaded: historyLoaded,
+      requestCount: requestHistory.length,
+    });
+  }, [historyLoaded, historyLoading, historyUnavailable, requestHistory.length]);
+
+  const loadWalkHistory = useCallback(async () => {
+    if (!enabled) {
+      setRequestHistory([]);
+      setHistoryLoaded(false);
+      setHistoryLoading(false);
+      setHistoryUnavailable(false);
+      return;
+    }
+
+    setHistoryLoading(true);
+    setHistoryUnavailable(false);
+    try {
+      const data = await getWalkRequests();
+      setRequestHistory(data.requests);
+      setHistoryLoaded(true);
+    } catch {
+      setHistoryUnavailable(true);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    void loadWalkHistory();
+  }, [loadWalkHistory]);
 
   const refresh = useCallback(async () => {
     await health();
@@ -132,6 +172,9 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     try {
       const data = await createWalkRequest(localRequest);
       setRequest(data.request);
+      setRequestHistory((history) => [data.request, ...history.filter((item) => item.id !== data.request.id)]);
+      setHistoryLoaded(true);
+      setHistoryUnavailable(false);
       setApiOnline(true);
       setApiNote('Request live for guides');
       return true;
@@ -193,6 +236,8 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
 
   return {
     request,
+    requestHistory,
+    walkHistoryState,
     liveSession,
     messages,
     apiOnline,

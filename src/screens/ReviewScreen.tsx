@@ -61,11 +61,11 @@ export function ReviewScreen({
             </>
           ) : estimateBusy ? (
             <View style={styles.quoteState}>
-              <ActivityIndicator color={colors.blue} />
+              <ActivityIndicator color={colors.action} />
               <Text style={styles.estimatePending}>Calculating your server quote…</Text>
             </View>
           ) : estimateError ? (
-            <View style={styles.quoteState}>
+            <View style={[styles.quoteState, styles.quoteStateError]}>
               <Text style={styles.estimateError}>{estimateError}</Text>
               <Button label="Retry quote" variant="secondary" onPress={onRetryEstimate} />
             </View>
@@ -84,19 +84,20 @@ export function ReviewScreen({
 
 const styles = StyleSheet.create({
   card: { marginTop: 16 },
-  route: { color: colors.ink, fontSize: 18, fontWeight: '900' },
-  arrow: { color: colors.gold, fontSize: 24, fontWeight: '900', marginVertical: 4 },
+  route: { color: colors.textPrimary, fontSize: 18, fontWeight: '900' },
+  arrow: { color: colors.accentWarm, fontSize: 24, fontWeight: '900', marginVertical: 4 },
   stats: { flexDirection: 'row', gap: 8, marginVertical: 16 },
   pills: { flexDirection: 'row', flexWrap: 'wrap' },
-  priceBox: { backgroundColor: colors.cream, borderRadius: 20, padding: 14, marginTop: 10 },
+  priceBox: { backgroundColor: colors.surfaceWarm, borderRadius: 20, padding: 14, marginTop: 10 },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
-  priceLabel: { color: colors.muted, fontWeight: '700' },
-  priceValue: { color: colors.ink, fontWeight: '800' },
-  totalRow: { borderTopWidth: 1, borderTopColor: colors.line, marginTop: 8, paddingTop: 12 },
-  totalLabel: { color: colors.ink, fontWeight: '900', fontSize: 16 },
-  totalValue: { color: colors.ink, fontWeight: '900', fontSize: 24 },
-  estimatePending: { color: colors.muted, fontWeight: '800', lineHeight: 20 },
-  quoteState: { gap: 12 },
+  priceLabel: { color: colors.textSecondary, fontWeight: '700' },
+  priceValue: { color: colors.textPrimary, fontWeight: '800' },
+  totalRow: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 12 },
+  totalLabel: { color: colors.textPrimary, fontWeight: '900', fontSize: 16 },
+  totalValue: { color: colors.textPrimary, fontWeight: '900', fontSize: 24 },
+  estimatePending: { color: colors.textSecondary, fontWeight: '800', lineHeight: 20 },
+  quoteState: { gap: 12, backgroundColor: colors.surfaceInfo, borderRadius: 16, padding: 12 },
+  quoteStateError: { backgroundColor: colors.surfaceDanger, borderWidth: 1, borderColor: colors.danger },
   estimateError: { color: colors.danger, fontWeight: '800', lineHeight: 20 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 18 },
 });

@@ -8,7 +8,7 @@ export function BrandMark() {
   return (
     <View style={styles.brandRow}>
       <View style={styles.logo}>
-        <Ionicons name="navigate" size={20} color={colors.white} />
+        <Ionicons name="navigate" size={20} color={colors.onDark} />
       </View>
       <View>
         <Text style={styles.brand}>LiveWalk</Text>
@@ -26,10 +26,10 @@ export function MiniRouteMap({ compact = false }: { compact?: boolean }) {
       <View style={[styles.mapBlock, styles.blockThree]} />
       <View style={styles.routeLine} />
       <View style={[styles.pin, styles.pinStart]}>
-        <Ionicons name="walk" size={15} color={colors.white} />
+        <Ionicons name="walk" size={15} color={colors.onAction} />
       </View>
       <View style={[styles.pin, styles.pinEnd]}>
-        <Ionicons name="flag" size={14} color={colors.white} />
+        <Ionicons name="flag" size={14} color={colors.onAction} />
       </View>
       <View style={styles.gpsDot} />
       <Text style={styles.mapLabel}>Live GPS route preview</Text>
@@ -46,7 +46,7 @@ export function VideoPlaceholder({ guideName = 'Guide', routeLabel = 'live route
         <Text style={styles.videoBadgeText}>LIVE WALK</Text>
       </View>
       <View style={styles.videoCenter}>
-        <Ionicons name="videocam" size={36} color={colors.white} />
+        <Ionicons name="videocam" size={36} color={colors.onDark} />
         <Text style={styles.videoTitle}>Guide camera feed</Text>
         <Text style={styles.videoText}>Mock stream placeholder until video integration</Text>
       </View>
@@ -103,9 +103,9 @@ function buildMapboxImageUrl({ location, request, mapboxToken }: LiveMapProps) {
   if (!guide || !mapboxToken) return undefined;
 
   const overlays = [
-    origin ? pin('s', 'a', '0F766E', origin.lng, origin.lat) : undefined,
-    destination ? pin('s', 'b', '061826', destination.lng, destination.lat) : undefined,
-    pin('l', 'g', '2A8CFF', guide.lng, guide.lat),
+    origin ? pin('s', 'a', colors.success.slice(1), origin.lng, origin.lat) : undefined,
+    destination ? pin('s', 'b', colors.textPrimary.slice(1), destination.lng, destination.lat) : undefined,
+    pin('l', 'g', colors.action.slice(1), guide.lng, guide.lat),
   ].filter(Boolean).join(',');
   const viewport = origin && destination ? 'auto' : `${guide.lng.toFixed(5)},${guide.lat.toFixed(5)},15,0`;
   return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays}/${viewport}/600x360@2x?access_token=${encodeURIComponent(mapboxToken)}`;
@@ -118,7 +118,7 @@ export function LiveGuideMap({ location, request, mapboxToken }: LiveMapProps) {
   if (!guide) {
     return (
       <View style={[styles.liveMap, styles.liveMapWaiting]}>
-        <Ionicons name="locate-outline" size={34} color={colors.blue} />
+        <Ionicons name="locate-outline" size={34} color={colors.action} />
         <Text style={styles.liveMapTitle}>Waiting for guide GPS</Text>
         <Text style={styles.liveMapText}>The map will switch on as soon as the Guide APK publishes latitude and longitude for this live session.</Text>
       </View>
@@ -128,7 +128,7 @@ export function LiveGuideMap({ location, request, mapboxToken }: LiveMapProps) {
   if (!imageUrl) {
     return (
       <View style={[styles.liveMap, styles.liveMapWaiting]}>
-        <Ionicons name="map-outline" size={34} color={colors.blue} />
+        <Ionicons name="map-outline" size={34} color={colors.action} />
         <Text style={styles.liveMapTitle}>Map token missing</Text>
         <Text style={styles.liveMapText}>Live coordinates are available, but the Mapbox public token is not configured for this build.</Text>
       </View>
@@ -182,20 +182,20 @@ export function LiveProgressRail({
 
 const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
-  logo: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
-  brand: { color: colors.ink, fontSize: 20, fontWeight: '900', letterSpacing: -0.4 },
-  brandSub: { color: colors.muted, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.5 },
+  logo: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center' },
+  brand: { color: colors.textPrimary, fontSize: 20, fontWeight: '900', letterSpacing: -0.4 },
+  brandSub: { color: colors.textSecondary, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.5 },
   map: {
     height: 220,
     borderRadius: 28,
     overflow: 'hidden',
-    backgroundColor: colors.blueSoft,
+    backgroundColor: colors.actionSoft,
     position: 'relative',
     borderWidth: 1,
-    borderColor: 'rgba(13,77,102,0.16)',
+    borderColor: colors.border,
   },
   mapCompact: { height: 154, borderRadius: 22 },
-  mapBlock: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 18 },
+  mapBlock: { position: 'absolute', backgroundColor: colors.surface, borderRadius: 18 },
   blockOne: { left: 18, top: 20, width: 112, height: 70, transform: [{ rotate: '-9deg' }] },
   blockTwo: { right: 14, top: 42, width: 132, height: 82, transform: [{ rotate: '12deg' }] },
   blockThree: { left: 58, bottom: 24, width: 170, height: 62, transform: [{ rotate: '5deg' }] },
@@ -206,12 +206,12 @@ const styles = StyleSheet.create({
     width: 212,
     height: 6,
     borderRadius: 999,
-    backgroundColor: colors.gold,
+    backgroundColor: colors.accentWarm,
     transform: [{ rotate: '28deg' }],
   },
   pin: { position: 'absolute', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  pinStart: { left: 42, top: 56, backgroundColor: colors.green },
-  pinEnd: { right: 42, bottom: 50, backgroundColor: colors.ink },
+  pinStart: { left: 42, top: 56, backgroundColor: colors.success },
+  pinEnd: { right: 42, bottom: 50, backgroundColor: colors.action },
   gpsDot: {
     position: 'absolute',
     left: '54%',
@@ -219,47 +219,47 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderWidth: 5,
-    borderColor: colors.blue,
+    borderColor: colors.action,
   },
-  mapLabel: { position: 'absolute', left: 16, bottom: 14, color: colors.blue, fontWeight: '900' },
-  video: { height: 342, borderRadius: 32, backgroundColor: '#07131D', overflow: 'hidden', position: 'relative' },
-  videoGradientTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 130, backgroundColor: '#173D52', opacity: 0.9 },
-  videoBadge: { position: 'absolute', top: 18, left: 18, backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5A57' },
-  videoBadgeText: { color: colors.white, fontWeight: '900', fontSize: 12 },
+  mapLabel: { position: 'absolute', left: 16, bottom: 14, color: colors.actionPressed, fontWeight: '900' },
+  video: { height: 342, borderRadius: 32, backgroundColor: colors.textPrimary, overflow: 'hidden', position: 'relative' },
+  videoGradientTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 130, backgroundColor: colors.actionPressed },
+  videoBadge: { position: 'absolute', top: 18, left: 18, backgroundColor: colors.action, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.live },
+  videoBadgeText: { color: colors.onAction, fontWeight: '900', fontSize: 12 },
   videoCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-  videoTitle: { color: colors.white, fontSize: 24, fontWeight: '900', marginTop: 10 },
-  videoText: { color: 'rgba(255,255,255,0.72)', textAlign: 'center', marginTop: 8 },
+  videoTitle: { color: colors.onDark, fontSize: 24, fontWeight: '900', marginTop: 10 },
+  videoText: { color: colors.onDarkMuted, textAlign: 'center', marginTop: 8 },
   videoBottom: { position: 'absolute', bottom: 18, left: 18, right: 18, flexDirection: 'row', justifyContent: 'space-between' },
-  videoMeta: { color: colors.white, fontWeight: '800', fontSize: 12 },
+  videoMeta: { color: colors.onDark, fontWeight: '800', fontSize: 12 },
   progressCard: { marginTop: 14 },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  progressTitle: { color: colors.ink, fontWeight: '900', fontSize: 16 },
-  progressPct: { color: colors.green, fontWeight: '900' },
-  track: { height: 10, backgroundColor: colors.blueSoft, borderRadius: 999, overflow: 'hidden' },
-  trackFill: { width: '62%', height: '100%', backgroundColor: colors.green, borderRadius: 999 },
+  progressTitle: { color: colors.textPrimary, fontWeight: '900', fontSize: 16 },
+  progressPct: { color: colors.success, fontWeight: '900' },
+  track: { height: 10, backgroundColor: colors.actionSoft, borderRadius: 999, overflow: 'hidden' },
+  trackFill: { width: '62%', height: '100%', backgroundColor: colors.success, borderRadius: 999 },
   routeStops: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  stopText: { color: colors.muted, fontSize: 11, fontWeight: '700' },
+  stopText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
   liveMap: {
     height: 208,
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: colors.blueSoft,
+    backgroundColor: colors.actionSoft,
     position: 'relative',
     borderWidth: 1,
-    borderColor: 'rgba(13,77,102,0.16)',
+    borderColor: colors.border,
   },
   liveMapWaiting: { alignItems: 'center', justifyContent: 'center', padding: 24 },
-  liveMapTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: 10 },
-  liveMapText: { color: colors.muted, textAlign: 'center', lineHeight: 20, fontWeight: '700', marginTop: 6 },
+  liveMapTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '900', marginTop: 10 },
+  liveMapText: { color: colors.textSecondary, textAlign: 'center', lineHeight: 20, fontWeight: '700', marginTop: 6 },
   mapImage: { width: '100%', height: '100%' },
   mapOverlay: {
     position: 'absolute',
     left: 14,
     top: 14,
-    backgroundColor: 'rgba(6,24,38,0.82)',
+    backgroundColor: colors.overlay,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -267,6 +267,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  mapOverlayText: { color: colors.white, fontWeight: '900', fontSize: 12 },
-  progressMeta: { color: colors.muted, fontWeight: '700', marginTop: 3, fontSize: 12 },
+  mapOverlayText: { color: colors.onDark, fontWeight: '900', fontSize: 12 },
+  progressMeta: { color: colors.textSecondary, fontWeight: '700', marginTop: 3, fontSize: 12 },
 });

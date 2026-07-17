@@ -3,8 +3,16 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandMark, MiniRouteMap } from '../components/TravelVisuals';
 import { Button, Card, Header, colors } from '../components/Primitives';
+import { getFirstWalkCta, type WalkHistoryState } from '../flow';
 
-export function OnboardingScreen({ onStart }: { onStart: () => void }) {
+export function OnboardingScreen({
+  historyState,
+  onStart,
+}: {
+  historyState: WalkHistoryState;
+  onStart: () => void;
+}) {
+  const cta = getFirstWalkCta(historyState);
   return (
     <View>
       <BrandMark />
@@ -22,7 +30,7 @@ export function OnboardingScreen({ onStart }: { onStart: () => void }) {
         ].map(([icon, title, body]) => (
           <Card key={title} style={styles.feature}>
             <View style={styles.featureIcon}>
-              <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={20} color={colors.ink} />
+              <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={20} color={colors.textPrimary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.featureTitle}>{title}</Text>
@@ -31,7 +39,7 @@ export function OnboardingScreen({ onStart }: { onStart: () => void }) {
           </Card>
         ))}
       </View>
-      <Button label="Plan my first walk" icon="arrow-forward" onPress={onStart} />
+      <Button label={cta.label} icon="arrow-forward" onPress={onStart} disabled={cta.disabled} />
     </View>
   );
 }
@@ -39,7 +47,7 @@ export function OnboardingScreen({ onStart }: { onStart: () => void }) {
 const styles = StyleSheet.create({
   cards: { gap: 10, marginVertical: 18 },
   feature: { flexDirection: 'row', gap: 12, alignItems: 'center', padding: 14, borderRadius: 22 },
-  featureIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.sand, alignItems: 'center', justifyContent: 'center' },
-  featureTitle: { color: colors.ink, fontWeight: '900', fontSize: 15 },
-  featureBody: { color: colors.muted, marginTop: 3, lineHeight: 18 },
+  featureIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.surfaceWarm, alignItems: 'center', justifyContent: 'center' },
+  featureTitle: { color: colors.textPrimary, fontWeight: '900', fontSize: 15 },
+  featureBody: { color: colors.textSecondary, marginTop: 3, lineHeight: 18 },
 });

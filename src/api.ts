@@ -96,6 +96,10 @@ export async function estimateWalkRequest(request: WalkRequest) {
   });
 }
 
+export async function getWalkRequests() {
+  return api<{ ok: true; requests: MarketplaceRequest[] }>('/api/requests');
+}
+
 export async function getWalkRequest(id: string) {
   return api<{ ok: true; request: MarketplaceRequest; session?: LiveSession | null }>(`/api/requests/${id}`);
 }

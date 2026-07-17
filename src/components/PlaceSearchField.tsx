@@ -113,19 +113,19 @@ export function PlaceSearchField({
     <View style={styles.fieldWrap}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputShell}>
-        <Ionicons name="search" size={18} color={colors.muted} />
+        <Ionicons name="search" size={18} color={colors.textSecondary} />
         <TextInput
           accessibilityLabel={`${label} place search`}
           autoCapitalize="words"
           autoCorrect={false}
           onChangeText={updateQuery}
           placeholder="Search for a real place"
-          placeholderTextColor="#93A0AA"
+          placeholderTextColor={colors.textTertiary}
           style={styles.input}
           value={query}
         />
-        {loading ? <ActivityIndicator color={colors.blue} size="small" /> : null}
-        {selected ? <Ionicons name="checkmark-circle" size={20} color={colors.green} /> : null}
+        {loading ? <ActivityIndicator color={colors.action} size="small" /> : null}
+        {selected ? <Ionicons name="checkmark-circle" size={20} color={colors.success} /> : null}
       </View>
       {selected ? <Text style={styles.selection}>Place selected with map coordinates</Text> : <Text style={styles.helper}>Choose a result to set the route coordinates.</Text>}
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -140,7 +140,7 @@ export function PlaceSearchField({
               onPress={() => selectPlace(place)}
               style={({ pressed }) => [styles.result, pressed && styles.resultPressed]}
             >
-              <Ionicons name="location-outline" size={18} color={colors.blue} />
+              <Ionicons name="location-outline" size={18} color={colors.action} />
               <Text style={styles.resultText}>{place.label}</Text>
             </Pressable>
           ))}
@@ -152,15 +152,15 @@ export function PlaceSearchField({
 
 const styles = StyleSheet.create({
   fieldWrap: { marginBottom: 14 },
-  label: { color: colors.ink, fontSize: 13, fontWeight: '800', marginBottom: 8 },
-  inputShell: { minHeight: 52, alignItems: 'center', backgroundColor: colors.white, borderColor: colors.line, borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 10, paddingHorizontal: 14 },
-  input: { color: colors.ink, flex: 1, fontSize: 16, paddingVertical: 12 },
-  helper: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 7 },
-  selection: { color: colors.green, fontSize: 12, fontWeight: '800', marginTop: 7 },
+  label: { color: colors.textPrimary, fontSize: 13, fontWeight: '800', marginBottom: 8 },
+  inputShell: { minHeight: 52, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.borderStrong, borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 10, paddingHorizontal: 14 },
+  input: { color: colors.textPrimary, flex: 1, fontSize: 16, paddingVertical: 12 },
+  helper: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginTop: 7 },
+  selection: { color: colors.success, fontSize: 12, fontWeight: '800', marginTop: 7 },
   error: { color: colors.danger, fontSize: 12, fontWeight: '800', marginTop: 7 },
-  empty: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 8 },
-  results: { backgroundColor: colors.white, borderColor: colors.line, borderRadius: 18, borderWidth: 1, marginTop: 8, overflow: 'hidden' },
-  result: { alignItems: 'center', borderBottomColor: colors.line, borderBottomWidth: 1, flexDirection: 'row', gap: 10, minHeight: 52, paddingHorizontal: 14, paddingVertical: 10 },
-  resultPressed: { backgroundColor: colors.cream },
-  resultText: { color: colors.ink, flex: 1, fontWeight: '700', lineHeight: 19 },
+  empty: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginTop: 8 },
+  results: { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderRadius: 18, borderWidth: 1, marginTop: 8, overflow: 'hidden' },
+  result: { alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', gap: 10, minHeight: 52, paddingHorizontal: 14, paddingVertical: 10 },
+  resultPressed: { backgroundColor: colors.actionSoft },
+  resultText: { color: colors.textPrimary, flex: 1, fontWeight: '700', lineHeight: 19 },
 });

@@ -44,7 +44,7 @@ export function AuthScreen() {
         <Field label={isRegister ? 'Name' : 'Display name'} value={name} onChangeText={setName} autoCapitalize="words" placeholder="Ash Most" />
         <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
         <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
-        {shownError ? <Text style={styles.error}>{shownError}</Text> : null}
+        {shownError ? <View style={styles.errorBox}><Text style={styles.error}>{shownError}</Text></View> : null}
         <Button label="Use Demo Traveler" icon="sparkles" variant="secondary" onPress={useDemoTraveler} disabled={busy} style={styles.demo} />
         <Button label={busy ? 'Working…' : isRegister ? 'Create account' : 'Log in'} icon={isRegister ? 'person-add' : 'log-in'} onPress={submit} disabled={busy} style={styles.primary} />
         <Button
@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   demo: { marginTop: 2 },
   primary: { marginTop: 8 },
   secondary: { marginTop: 8 },
-  error: { color: colors.danger, fontWeight: '800', marginVertical: 8 },
-  note: { color: colors.muted, fontWeight: '700', lineHeight: 20, marginTop: 14 },
+  errorBox: { backgroundColor: colors.surfaceDanger, borderColor: colors.danger, borderRadius: 14, borderWidth: 1, marginVertical: 8, padding: 12 },
+  error: { color: colors.danger, fontWeight: '800' },
+  note: { color: colors.textSecondary, fontWeight: '700', lineHeight: 20, marginTop: 14 },
 });

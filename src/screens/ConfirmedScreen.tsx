@@ -28,7 +28,7 @@ export function ConfirmedScreen({
       <Header kicker={confirmed ? 'Confirmed' : 'Pending'} title={confirmed ? 'Your live walk is booked.' : 'Your request is waiting for a guide.'} />
       <Card style={styles.hero}>
         <View style={[styles.statusIcon, !confirmed && styles.statusPending]}>
-          <Ionicons name={confirmed ? 'checkmark' : 'time'} size={28} color={colors.white} />
+          <Ionicons name={confirmed ? 'checkmark' : 'time'} size={28} color={colors.onAction} />
         </View>
         <Text style={styles.heroTitle}>{confirmed ? `${guideName} will guide you` : 'Guides can accept this request'}</Text>
         <Text style={styles.heroBody}>{formatScheduledStart(scheduledStart)} • {formatDuration(durationMinutes)} • {request.language}</Text>
@@ -47,7 +47,7 @@ export function ConfirmedScreen({
         <View style={styles.checklist}>
           {['Guide acceptance is shared through the backend', 'Guide starts the live session after the readiness checklist', 'Traveler controls unlock only once the guide is live'].map((item) => (
             <View key={item} style={styles.checkRow}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.green} />
+              <Ionicons name="checkmark-circle" size={18} color={colors.success} />
               <Text style={styles.checkText}>{item}</Text>
             </View>
           ))}
@@ -59,18 +59,18 @@ export function ConfirmedScreen({
 }
 
 const styles = StyleSheet.create({
-  hero: { backgroundColor: colors.ink, alignItems: 'center', marginBottom: 14 },
-  statusIcon: { width: 58, height: 58, borderRadius: 22, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  statusPending: { backgroundColor: colors.gold },
-  heroTitle: { color: colors.white, fontSize: 22, fontWeight: '900', textAlign: 'center' },
-  heroBody: { color: 'rgba(255,255,255,0.72)', marginTop: 6, fontWeight: '700' },
-  bookingId: { color: 'rgba(255,255,255,0.54)', marginTop: 8, fontWeight: '800', fontSize: 12 },
+  hero: { backgroundColor: colors.textPrimary, alignItems: 'center', marginBottom: 14, borderColor: colors.textPrimary },
+  statusIcon: { width: 58, height: 58, borderRadius: 22, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  statusPending: { backgroundColor: colors.accentWarm },
+  heroTitle: { color: colors.onDark, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+  heroBody: { color: colors.onDarkMuted, marginTop: 6, fontWeight: '700' },
+  bookingId: { color: colors.onDarkMuted, marginTop: 8, fontWeight: '800', fontSize: 12 },
   detailCard: { marginTop: 14 },
-  sectionTitle: { color: colors.ink, fontWeight: '900', fontSize: 18, marginBottom: 12 },
-  route: { color: colors.ink, fontWeight: '900', fontSize: 16 },
-  arrow: { color: colors.gold, marginVertical: 4, fontWeight: '900' },
+  sectionTitle: { color: colors.textPrimary, fontWeight: '900', fontSize: 18, marginBottom: 12 },
+  route: { color: colors.textPrimary, fontWeight: '900', fontSize: 16 },
+  arrow: { color: colors.accentWarm, marginVertical: 4, fontWeight: '900' },
   stats: { flexDirection: 'row', gap: 10, marginVertical: 14 },
   checklist: { gap: 8 },
   checkRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  checkText: { color: colors.muted, fontWeight: '700', flex: 1 },
+  checkText: { color: colors.textSecondary, fontWeight: '700', flex: 1 },
 });

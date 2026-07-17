@@ -4,8 +4,8 @@
 This MVP covers only the traveler side of LiveWalk. Guide apps, marketplace dispatch, payments, video streaming, route APIs, and backend accounts are represented with mocked data and local state.
 
 ## Interaction model
-- The top Start/Request/Review/Match/Booked/Live/Summary labels are pressable step tabs.
-- A persistent bottom Previous/Next bar lets Android testers move through all seven pages even when a screen's own CTA is below the fold.
+- The top Start/Request/Review/Match/Booked/Live/Summary strip is a read-only, accessible progress indicator that highlights the current booking stage.
+- A persistent bottom Previous/Next bar and each screen's CTAs move Android testers through all seven pages, including when a screen's own CTA is below the fold.
 - Each page scrolls vertically inside the safe area so lower controls are reachable on smaller phones and above Android system navigation.
 
 ## Traveler flow

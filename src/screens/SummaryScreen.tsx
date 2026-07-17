@@ -14,7 +14,7 @@ export function SummaryScreen({ onNewWalk }: { onNewWalk: () => void }) {
       />
       <Card style={styles.receipt}>
         <View style={styles.medal}>
-          <Ionicons name="sparkles" size={30} color={colors.white} />
+          <Ionicons name="sparkles" size={30} color={colors.onDark} />
         </View>
         <Text style={styles.receiptTitle}>45 minute walk completed</Text>
         <View style={styles.stats}>
@@ -27,8 +27,8 @@ export function SummaryScreen({ onNewWalk }: { onNewWalk: () => void }) {
         <Text style={styles.sectionTitle}>Rate your guide</Text>
         <View style={styles.stars}>
           {[1, 2, 3, 4, 5].map((star) => (
-            <TouchableOpacity key={star} onPress={() => setRating(star)}>
-              <Ionicons name={star <= rating ? 'star' : 'star-outline'} size={34} color={colors.gold} />
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Rate ${star} star${star === 1 ? '' : 's'}`} accessibilityState={{ selected: star <= rating }} key={star} onPress={() => setRating(star)}>
+              <Ionicons name={star <= rating ? 'star' : 'star-outline'} size={34} color={colors.accentWarm} />
             </TouchableOpacity>
           ))}
         </View>
@@ -38,7 +38,7 @@ export function SummaryScreen({ onNewWalk }: { onNewWalk: () => void }) {
         <Text style={styles.sectionTitle}>What happens next</Text>
         {['Receipt and recording access can be added once backend storage exists.', 'Favorites and rebooking should attach to the traveler profile.', 'Disputes/refunds will need payment state and session logs.'].map((item) => (
           <View key={item} style={styles.nextRow}>
-            <Ionicons name="chevron-forward" size={16} color={colors.gold} />
+            <Ionicons name="chevron-forward" size={16} color={colors.accentWarm} />
             <Text style={styles.nextText}>{item}</Text>
           </View>
         ))}
@@ -49,15 +49,15 @@ export function SummaryScreen({ onNewWalk }: { onNewWalk: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  receipt: { alignItems: 'center', backgroundColor: colors.ink },
-  medal: { width: 64, height: 64, borderRadius: 24, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  receiptTitle: { color: colors.white, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+  receipt: { alignItems: 'center', backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
+  medal: { width: 64, height: 64, borderRadius: 24, backgroundColor: colors.accentWarm, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  receiptTitle: { color: colors.onDark, fontSize: 22, fontWeight: '900', textAlign: 'center' },
   stats: { flexDirection: 'row', gap: 8, marginTop: 16 },
   ratingCard: { marginTop: 14, alignItems: 'center' },
-  sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginBottom: 12 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '900', marginBottom: 12 },
   stars: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  feedback: { color: colors.muted, textAlign: 'center', lineHeight: 21, fontWeight: '700' },
+  feedback: { color: colors.textSecondary, textAlign: 'center', lineHeight: 21, fontWeight: '700' },
   nextCard: { marginTop: 14 },
   nextRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginBottom: 8 },
-  nextText: { color: colors.muted, fontWeight: '700', flex: 1, lineHeight: 20 },
+  nextText: { color: colors.textSecondary, fontWeight: '700', flex: 1, lineHeight: 20 },
 });

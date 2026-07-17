@@ -92,7 +92,7 @@ export type MarketplaceRequest = {
   language: string;
   interests: string[];
   estimate: Estimate;
-  status: 'pending' | 'accepted' | 'declined' | 'live' | 'completed';
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'live' | 'completed';
   guide: MarketplaceGuide | null;
   sessionId: string | null;
   createdAt: string;

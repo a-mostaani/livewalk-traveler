@@ -9,7 +9,12 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "export:web": "expo export --platform web",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "check:config": "expo config --type public",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "check:mapbox": "node scripts/check-mapbox.mjs",
+    "check:live-session": "node scripts/check-live-session.mjs",
+    "check:request-state": "node scripts/check-request-state.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

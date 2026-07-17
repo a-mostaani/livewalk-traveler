@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
 import { defaultRequest } from './src/data/mock';
+import { stageLabels, stageOrder, stageState, canOpenStage } from './src/flow';
 import { useSession } from './src/hooks/useSession';
 import { API_BASE } from './src/api';
 import { AuthProvider, useAuth } from './src/auth/AuthContext';
@@ -18,26 +19,14 @@ import { ReviewScreen } from './src/screens/ReviewScreen';
 import { SummaryScreen } from './src/screens/SummaryScreen';
 import { hasRouteCoordinates, Screen, WalkRequest } from './src/types';
 
-const screenOrder: Screen[] = ['onboarding', 'request', 'review', 'matching', 'confirmed', 'live', 'summary'];
-
-const screenLabels: Record<Screen, string> = {
-  onboarding: 'Start',
-  request: 'Request',
-  review: 'Review',
-  matching: 'Match',
-  confirmed: 'Booked',
-  live: 'Live',
-  summary: 'Summary',
-};
-
 function TravelerApp() {
   const { user, busy: authBusy } = useAuth();
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [request, setRequest] = useState<WalkRequest>(defaultRequest);
   const scrollRef = useRef<ScrollView>(null);
-  const currentIndex = screenOrder.indexOf(screen);
+  const currentIndex = stageOrder.indexOf(screen);
   const isFirstScreen = currentIndex === 0;
-  const isLastScreen = currentIndex === screenOrder.length - 1;
+  const isLastScreen = currentIndex === stageOrder.length - 1;
 
   const session = useSession({ enabled: Boolean(user), localRequest: request, currentScreen: screen, onAccepted: () => navigateTo('confirmed') });
   const remoteRequest = session.request;
@@ -48,9 +37,10 @@ function TravelerApp() {
   const busy = session.busy;
   const guideHasStartedLive = session.guideHasStartedLive;
   const sessionEnded = session.sessionEnded;
+  const walkHistoryState = session.walkHistoryState;
 
   const navigateTo = (nextScreen: Screen) => {
-    if (nextScreen === 'live' && !guideHasStartedLive) return;
+    if (!canOpenStage(nextScreen, guideHasStartedLive)) return;
     setScreen(nextScreen);
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false }));
   };
@@ -63,7 +53,7 @@ function TravelerApp() {
   }, [screen, sessionEnded]);
 
   const goPrevious = () => {
-    if (!isFirstScreen) navigateTo(screenOrder[currentIndex - 1]);
+    if (!isFirstScreen) navigateTo(stageOrder[currentIndex - 1]);
   };
 
   const goNext = () => {
@@ -72,7 +62,7 @@ function TravelerApp() {
       openReview();
       return;
     }
-    navigateTo(isLastScreen ? 'request' : screenOrder[currentIndex + 1]);
+    navigateTo(isLastScreen ? 'request' : stageOrder[currentIndex + 1]);
   };
   const nextDisabled = screen === 'confirmed' && !guideHasStartedLive;
   const nextLabel = nextDisabled ? 'Waiting for guide' : (isLastScreen ? 'New walk' : 'Next');
@@ -114,7 +104,7 @@ function TravelerApp() {
         <View style={styles.appShell}>
           <View style={styles.appHeader}>
             <Pressable accessibilityRole="button" accessibilityLabel="Go to Start page" hitSlop={10} onPress={() => navigateTo('onboarding')} style={({ pressed }) => [styles.logoMini, pressed && styles.pressed]}>
-              <Ionicons name="navigate" size={16} color={colors.white} />
+              <Ionicons name="navigate" size={16} color={colors.onDark} />
             </Pressable>
             <View style={styles.headerCopy}>
               <Text style={styles.headerTitle}>LiveWalk Traveler MVP</Text>
@@ -126,17 +116,7 @@ function TravelerApp() {
             </View>
           </View>
           <Text style={styles.backendLine} numberOfLines={1}>{user ? `${user.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
-          {user ? <View style={styles.stepper}>
-            {screenOrder.map((item, index) => {
-              const active = item === screen;
-              return (
-                <Pressable key={item} accessibilityRole="tab" accessibilityState={{ selected: active }} accessibilityLabel={`Open ${screenLabels[item]} step`} hitSlop={6} onPress={() => navigateTo(item)} style={({ pressed }) => [styles.stepItem, pressed && styles.stepItemPressed]}>
-                  <View style={[styles.stepDot, index <= currentIndex && styles.stepDotActive]} />
-                  <Text style={[styles.stepLabel, active && styles.stepLabelActive]} numberOfLines={1}>{screenLabels[item]}</Text>
-                </Pressable>
-              );
-            })}
-          </View> : null}
+          {user ? <StageHeader currentIndex={currentIndex} screen={screen} /> : null}
           <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator>
             {authBusy ? (
               <View style={styles.authGate}>
@@ -148,7 +128,7 @@ function TravelerApp() {
               <AuthScreen />
             ) : (
               <>
-                {screen === 'onboarding' ? <OnboardingScreen onStart={() => navigateTo('request')} /> : null}
+                {screen === 'onboarding' ? <OnboardingScreen historyState={walkHistoryState} onStart={() => navigateTo('request')} /> : null}
                 {screen === 'request' ? <RequestScreen request={request} onChange={updateRequest} onReview={openReview} /> : null}
                 {screen === 'review' ? <ReviewScreen request={request} estimate={session.estimate} estimateBusy={session.estimateBusy} estimateError={session.estimateError} onBack={() => navigateTo('request')} onFindGuide={submitRequest} onRetryEstimate={session.quoteRequest} busy={busy} /> : null}
                 {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} /> : null}
@@ -170,37 +150,81 @@ function TravelerApp() {
   );
 }
 
+function StageHeader({ currentIndex, screen }: { currentIndex: number; screen: Screen }) {
+  const currentLabel = stageLabels[screen];
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel="Booking progress"
+      accessibilityValue={{ min: 1, max: stageOrder.length, now: currentIndex + 1, text: `Stage ${currentIndex + 1} of ${stageOrder.length}: ${currentLabel}` }}
+      style={styles.stageHeader}
+    >
+      <View style={styles.stageHeaderCopy}>
+        <Text style={styles.stageEyebrow}>Booking progress</Text>
+        <Text style={styles.stageSummary}>Stage {currentIndex + 1} of {stageOrder.length} · {currentLabel}</Text>
+      </View>
+      <View accessible={false} pointerEvents="none" style={styles.stageTrack}>
+        {stageOrder.map((item, index) => {
+          const state = stageState(index, currentIndex);
+          const complete = state === 'complete';
+          const current = state === 'current';
+          return (
+            <React.Fragment key={item}>
+              <View style={styles.stageItem}>
+                <View style={[styles.stageMarker, complete && styles.stageMarkerComplete, current && styles.stageMarkerCurrent]}>
+                  {complete ? <Ionicons name="checkmark" size={14} color={colors.onAction} /> : <Text style={[styles.stageNumber, (complete || current) && styles.stageNumberCurrent]}>{index + 1}</Text>}
+                </View>
+                <Text style={[styles.stageLabel, current && styles.stageLabelCurrent, complete && styles.stageLabelComplete]} numberOfLines={2}>{stageLabels[item]}</Text>
+              </View>
+              {index < stageOrder.length - 1 ? <View style={[styles.stageConnector, complete && styles.stageConnectorComplete]} /> : null}
+            </React.Fragment>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.cream },
-  appShell: { flex: 1, backgroundColor: colors.cream },
-  authGate: { backgroundColor: colors.white, borderRadius: 28, borderWidth: 1, borderColor: colors.line, padding: 24, gap: 8 },
-  authGateKicker: { color: colors.gold, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
-  authGateTitle: { color: colors.ink, fontSize: 26, fontWeight: '900', letterSpacing: -0.7 },
-  authGateText: { color: colors.muted, fontWeight: '700', lineHeight: 20 },
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  appShell: { flex: 1, backgroundColor: colors.background },
+  authGate: { backgroundColor: colors.surface, borderRadius: 28, borderWidth: 1, borderColor: colors.border, padding: 24, gap: 8 },
+  authGateKicker: { color: colors.accentWarm, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  authGateTitle: { color: colors.textPrimary, fontSize: 26, fontWeight: '900', letterSpacing: -0.7 },
+  authGateText: { color: colors.textSecondary, fontWeight: '700', lineHeight: 20 },
   appHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 6 },
-  logoMini: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.68 },
+  logoMini: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.78 },
   headerCopy: { flex: 1, minWidth: 0 },
-  headerTitle: { color: colors.ink, fontWeight: '900', fontSize: 16 },
-  headerSub: { color: colors.muted, fontWeight: '700', fontSize: 12, marginTop: 1 },
-  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1 },
-  statusPillOnline: { backgroundColor: '#EAF7F2', borderColor: '#BDE8DC' },
-  statusPillOffline: { backgroundColor: '#FFF8EA', borderColor: '#F2DCA8' },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },
-  statusDotOnline: { backgroundColor: colors.green },
-  statusText: { color: colors.ink, fontWeight: '900', fontSize: 11 },
-  backendLine: { color: colors.muted, fontSize: 11, fontWeight: '700', paddingHorizontal: 18, paddingBottom: 7 },
-  stepper: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 8, gap: 3 },
-  stepItem: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 12 },
-  stepItemPressed: { backgroundColor: 'rgba(6,24,38,0.06)' },
-  stepDot: { width: '82%', height: 4, borderRadius: 999, backgroundColor: '#E4DCCD' },
-  stepDotActive: { backgroundColor: colors.ink },
-  stepLabel: { color: colors.muted, fontSize: 10, fontWeight: '800' },
-  stepLabelActive: { color: colors.ink },
+  headerTitle: { color: colors.textPrimary, fontWeight: '900', fontSize: 16 },
+  headerSub: { color: colors.textSecondary, fontWeight: '700', fontSize: 12, marginTop: 1 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: colors.border },
+  statusPillOnline: { backgroundColor: colors.surfaceSuccess },
+  statusPillOffline: { backgroundColor: colors.surfaceWarning },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accentWarm },
+  statusDotOnline: { backgroundColor: colors.success },
+  statusText: { color: colors.textPrimary, fontWeight: '900', fontSize: 11 },
+  backendLine: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', paddingHorizontal: 18, paddingBottom: 7 },
+  stageHeader: { backgroundColor: colors.surface, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 9 },
+  stageHeaderCopy: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
+  stageEyebrow: { color: colors.textPrimary, fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.8 },
+  stageSummary: { color: colors.textSecondary, fontSize: 12, fontWeight: '800', textAlign: 'right' },
+  stageTrack: { flexDirection: 'row', alignItems: 'flex-start' },
+  stageItem: { alignItems: 'center', width: 38 },
+  stageMarker: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceInfo, borderWidth: 1, borderColor: colors.borderStrong },
+  stageMarkerComplete: { backgroundColor: colors.action, borderColor: colors.action },
+  stageMarkerCurrent: { backgroundColor: colors.accent, borderColor: colors.accent },
+  stageNumber: { color: colors.textPrimary, fontWeight: '900', fontSize: 12 },
+  stageNumberCurrent: { color: colors.onAction },
+  stageConnector: { flex: 1, minWidth: 2, height: 2, borderRadius: 2, backgroundColor: colors.border, marginTop: 13 },
+  stageConnectorComplete: { backgroundColor: colors.action },
+  stageLabel: { color: colors.textSecondary, fontSize: 9, fontWeight: '800', lineHeight: 11, marginTop: 4, textAlign: 'center' },
+  stageLabelCurrent: { color: colors.accent, fontWeight: '900' },
+  stageLabelComplete: { color: colors.textPrimary },
   scroll: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 12, paddingBottom: 28 },
-  bottomSafeArea: { backgroundColor: colors.cream },
-  bottomNav: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, borderTopWidth: 1, borderTopColor: 'rgba(6,24,38,0.08)', backgroundColor: 'rgba(251,247,239,0.98)' },
+  bottomSafeArea: { backgroundColor: colors.background },
+  bottomNav: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
   navButton: { flex: 1 },
 });
 

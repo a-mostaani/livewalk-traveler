@@ -20,6 +20,8 @@ function friendlyApiError(status: number, raw: string) {
   if (lower.includes('password must')) return 'Use a password with at least 6 characters.';
   if (lower.includes('login required') || status === 401) return 'Session expired. Log in again, then retry.';
   if (lower.includes('only the guide can start')) return 'Only the Guide can start the live session after Ready is complete.';
+  if (lower.includes('only pending or accepted') && lower.includes('cancel')) return 'This request can no longer be cancelled because the live walk has already started.';
+  if (lower.includes('cancelled')) return 'This request was cancelled and is no longer available.';
   if (lower.includes('not started')) return 'The Guide has not started the live session yet.';
   if (status === 403) return message || 'This account is not allowed to do that step.';
   if (status >= 500) return 'LiveWalk is having a server problem. Retry in a moment.';
@@ -104,6 +106,10 @@ export async function getWalkRequest(id: string) {
   return api<{ ok: true; request: MarketplaceRequest; session?: LiveSession | null }>(`/api/requests/${id}`);
 }
 
+export async function cancelWalkRequest(id: string) {
+  return api<{ ok: true; request: MarketplaceRequest; session?: LiveSession | null }>(`/api/requests/${id}/cancel`, { method: 'POST' });
+}
+
 export async function startSession(sessionId: string) {
   return api<{ ok: true; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${sessionId}/start`, { method: 'POST' });
 }
@@ -113,7 +119,7 @@ export async function endSession(sessionId: string) {
 }
 
 export async function getSessionStatus(sessionId: string) {
-  return api<{ ok: true; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${sessionId}/status`);
+  return api<{ ok: true; session: LiveSession; messages: SessionMessage[]; request?: MarketplaceRequest }>(`/api/sessions/${sessionId}/status`);
 }
 
 export async function sendSessionMessage(sessionId: string, text: string) {

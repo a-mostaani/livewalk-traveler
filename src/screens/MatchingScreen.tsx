@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Header, Pill, Stat, colors } from '../components/Primitives';
 import { MarketplaceRequest } from '../api';
 import { formatDuration, formatEstimateTotal, formatScheduledStart } from '../format';
+import { isPreLiveRequest } from '../requestState';
 import { WalkRequest } from '../types';
 
 export function MatchingScreen({
@@ -11,13 +12,20 @@ export function MatchingScreen({
   remoteRequest,
   onCheck,
   onReset,
+  onCancel,
+  isCancelling,
+  cancelError,
 }: {
   request: WalkRequest;
   remoteRequest?: MarketplaceRequest;
   onCheck: () => void;
   onReset: () => void;
+  onCancel: () => void;
+  isCancelling: boolean;
+  cancelError?: string;
 }) {
   const accepted = remoteRequest?.status === 'accepted' || remoteRequest?.status === 'live';
+  const cancellable = isPreLiveRequest(remoteRequest);
   const route = remoteRequest?.route ?? `${request.origin.label} → ${request.destination.label}`;
   return (
     <View>
@@ -54,8 +62,9 @@ export function MatchingScreen({
           <Text style={styles.syncText}>Polling the backend every 2 seconds for near real-time booking updates.</Text>
         </View>
       </Card>
-      <Button label="Check now" icon="refresh" onPress={onCheck} style={{ marginTop: 18 }} />
-      <Button label="Start over locally" variant="ghost" onPress={onReset} style={{ marginTop: 8 }} />
+      <Button label="Check now" icon="refresh" onPress={onCheck} disabled={isCancelling} style={{ marginTop: 18 }} />
+      {cancellable ? <Button label={isCancelling ? 'Cancelling request…' : 'Cancel request'} icon="close-circle" variant="danger" onPress={onCancel} disabled={isCancelling} style={{ marginTop: 8 }} /> : <Button label="Start over locally" variant="ghost" onPress={onReset} style={{ marginTop: 8 }} />}
+      {cancelError ? <Text accessibilityLiveRegion="polite" style={styles.cancelError}>{cancelError}</Text> : null}
     </View>
   );
 }
@@ -74,4 +83,5 @@ const styles = StyleSheet.create({
   pills: { flexDirection: 'row', flexWrap: 'wrap' },
   syncRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.surfaceSuccess, borderRadius: 16, padding: 12 },
   syncText: { color: colors.textPrimary, flex: 1, fontWeight: '800', lineHeight: 20 },
+  cancelError: { color: colors.danger, fontWeight: '700', lineHeight: 19, marginTop: 10, textAlign: 'center' },
 });

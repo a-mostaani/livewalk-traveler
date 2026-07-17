@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createWalkRequest, endSession, estimateWalkRequest, getSessionStatus, getWalkRequest, getWalkRequests, health, sendSessionMessage } from '../api';
+import { cancelWalkRequest, createWalkRequest, endSession, estimateWalkRequest, getSessionStatus, getWalkRequest, getWalkRequests, health, sendSessionMessage } from '../api';
 import { hasRouteCoordinates, type Estimate, type LiveSession, type MarketplaceRequest, type Screen, type SessionMessage, type WalkRequest } from '../types';
 import { getWalkHistoryState, type WalkHistoryState } from '../flow';
+import { isPreLiveRequest } from '../requestState';
 
 type UseSessionArgs = {
   enabled: boolean;
@@ -21,10 +22,15 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
   const [apiOnline, setApiOnline] = useState(false);
   const [apiNote, setApiNote] = useState('Checking backend…');
   const [busy, setBusy] = useState(false);
+  const [cancellingRequestId, setCancellingRequestId] = useState<string | undefined>();
+  const [cancelError, setCancelError] = useState<string | undefined>();
   const [estimate, setEstimate] = useState<Estimate | undefined>();
   const [estimateBusy, setEstimateBusy] = useState(false);
   const [estimateError, setEstimateError] = useState<string | undefined>();
   const estimateSequence = useRef(0);
+  const cancelInFlight = useRef<string | undefined>(undefined);
+
+  const cancelBusy = cancellingRequestId === request?.id;
 
   const guideHasStartedLive = useMemo(
     () => Boolean(request?.sessionId && request?.status === 'live'),
@@ -197,6 +203,34 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     return true;
   }, [guideHasStartedLive, request?.sessionId]);
 
+  const cancelRequest = useCallback(async () => {
+    if (!request?.id || !isPreLiveRequest(request) || cancelInFlight.current) return false;
+
+    const requestId = request.id;
+    cancelInFlight.current = requestId;
+    setCancellingRequestId(requestId);
+    setCancelError(undefined);
+    setApiNote('Cancelling your request…');
+    try {
+      const data = await cancelWalkRequest(requestId);
+      if (data.request.status !== 'cancelled') throw new Error('LiveWalk could not confirm the cancellation. Please retry.');
+      setRequest(data.request);
+      setRequestHistory((history) => history.map((item) => item.id === requestId ? data.request : item));
+      setLiveSession(data.session ?? undefined);
+      setMessages([]);
+      setApiOnline(true);
+      setApiNote('Request cancelled');
+      return true;
+    } catch (error) {
+      setCancelError(error instanceof Error ? error.message : 'Could not cancel this request. Please try again.');
+      setApiNote('Could not cancel request');
+      return false;
+    } finally {
+      if (cancelInFlight.current === requestId) cancelInFlight.current = undefined;
+      setCancellingRequestId(undefined);
+    }
+  }, [request]);
+
   const sendMessage = useCallback(async (text: string) => {
     if (!request?.sessionId) return;
     await sendSessionMessage(request.sessionId, text);
@@ -229,6 +263,9 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     setRequest(undefined);
     setMessages([]);
     setLiveSession(undefined);
+    cancelInFlight.current = undefined;
+    setCancellingRequestId(undefined);
+    setCancelError(undefined);
     setEstimate(undefined);
     setEstimateBusy(false);
     setEstimateError(undefined);
@@ -243,6 +280,8 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     apiOnline,
     apiNote,
     busy,
+    cancelBusy,
+    cancelError,
     estimate,
     estimateBusy,
     estimateError,
@@ -252,6 +291,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     quoteRequest,
     clearEstimate,
     submitRequest,
+    cancelRequest,
     joinLive,
     sendMessage,
     endLive,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +35,8 @@ function TravelerApp() {
   const apiOnline = session.apiOnline;
   const apiNote = session.apiNote;
   const busy = session.busy;
+  const cancelBusy = session.cancelBusy;
+  const cancelError = session.cancelError;
   const guideHasStartedLive = session.guideHasStartedLive;
   const sessionEnded = session.sessionEnded;
   const walkHistoryState = session.walkHistoryState;
@@ -88,6 +90,22 @@ function TravelerApp() {
     if (joined) navigateTo('live');
   };
 
+  const cancelRequest = () => {
+    if (!remoteRequest?.id || cancelBusy) return;
+    Alert.alert(
+      'Cancel this request?',
+      'Guides will no longer be able to accept it. This cannot be undone.',
+      [
+        { text: 'Keep request', style: 'cancel' },
+        {
+          text: 'Cancel request',
+          style: 'destructive',
+          onPress: () => { void (async () => { if (await session.cancelRequest()) resetLocal(); })(); },
+        },
+      ],
+    );
+  };
+
   const sendTravelerMessage = async (text: string) => {
     await session.sendMessage(text);
   };
@@ -131,8 +149,8 @@ function TravelerApp() {
                 {screen === 'onboarding' ? <OnboardingScreen historyState={walkHistoryState} onStart={() => navigateTo('request')} /> : null}
                 {screen === 'request' ? <RequestScreen request={request} onChange={updateRequest} onReview={openReview} /> : null}
                 {screen === 'review' ? <ReviewScreen request={request} estimate={session.estimate} estimateBusy={session.estimateBusy} estimateError={session.estimateError} onBack={() => navigateTo('request')} onFindGuide={submitRequest} onRetryEstimate={session.quoteRequest} busy={busy} /> : null}
-                {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} /> : null}
-                {screen === 'confirmed' ? <ConfirmedScreen request={request} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} /> : null}
+                {screen === 'matching' ? <MatchingScreen request={request} remoteRequest={remoteRequest} onCheck={session.refresh} onReset={resetLocal} onCancel={cancelRequest} isCancelling={cancelBusy} cancelError={cancelError} /> : null}
+                {screen === 'confirmed' ? <ConfirmedScreen request={request} remoteRequest={remoteRequest} canJoinLive={guideHasStartedLive} onJoin={joinLive} onCancel={cancelRequest} isCancelling={cancelBusy} cancelError={cancelError} /> : null}
                 {screen === 'live' ? <LiveWalkScreen remoteRequest={remoteRequest} liveSession={liveSession} messages={messages} onSendMessage={sendTravelerMessage} onEnd={session.endLive} /> : null}
                 {screen === 'summary' ? <SummaryScreen onNewWalk={resetLocal} /> : null}
               </>

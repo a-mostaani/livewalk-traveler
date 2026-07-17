@@ -112,7 +112,7 @@ export type SessionMessage = {
 export type LiveSession = {
   id: string;
   requestId: string;
-  status: 'ready' | 'live' | 'ended';
+  status: 'ready' | 'cancelled' | 'live' | 'ended';
   startedAt?: string | null;
   endedAt?: string | null;
   location?: SessionLocation | null;

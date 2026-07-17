@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Header, Stat, colors } from '../components/Primitives';
 import { MiniRouteMap } from '../components/TravelVisuals';
 import { formatDuration, formatEstimateTotal, formatScheduledStart } from '../format';
+import { isPreLiveRequest } from '../requestState';
 import { WalkRequest } from '../types';
 import { MarketplaceRequest } from '../api';
 
@@ -12,13 +13,20 @@ export function ConfirmedScreen({
   remoteRequest,
   canJoinLive,
   onJoin,
+  onCancel,
+  isCancelling,
+  cancelError,
 }: {
   request: WalkRequest;
   remoteRequest?: MarketplaceRequest;
   canJoinLive: boolean;
   onJoin: () => void;
+  onCancel: () => void;
+  isCancelling: boolean;
+  cancelError?: string;
 }) {
   const confirmed = remoteRequest?.status === 'accepted' || remoteRequest?.status === 'live';
+  const cancellable = isPreLiveRequest(remoteRequest);
   const guideName = remoteRequest?.guide?.name;
   const joinLabel = canJoinLive ? 'Join shared live walk' : (confirmed ? 'Waiting for guide to start' : 'Waiting for guide');
   const scheduledStart = remoteRequest?.scheduledStart ?? request.scheduledStart;
@@ -53,7 +61,9 @@ export function ConfirmedScreen({
           ))}
         </View>
       </Card>
-      <Button label={joinLabel} icon={canJoinLive ? 'videocam' : 'lock-closed'} onPress={onJoin} disabled={!canJoinLive} style={{ marginTop: 18 }} />
+      <Button label={joinLabel} icon={canJoinLive ? 'videocam' : 'lock-closed'} onPress={onJoin} disabled={!canJoinLive || isCancelling} style={{ marginTop: 18 }} />
+      {cancellable ? <Button label={isCancelling ? 'Cancelling request…' : 'Cancel request'} icon="close-circle" variant="danger" onPress={onCancel} disabled={isCancelling} style={{ marginTop: 10 }} /> : null}
+      {cancelError ? <Text accessibilityLiveRegion="polite" style={styles.cancelError}>{cancelError}</Text> : null}
     </View>
   );
 }
@@ -73,4 +83,5 @@ const styles = StyleSheet.create({
   checklist: { gap: 8 },
   checkRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   checkText: { color: colors.textSecondary, fontWeight: '700', flex: 1 },
+  cancelError: { color: colors.danger, fontWeight: '700', lineHeight: 19, marginTop: 10, textAlign: 'center' },
 });

@@ -14,7 +14,8 @@
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:mapbox": "node scripts/check-mapbox.mjs",
     "check:live-session": "node scripts/check-live-session.mjs",
-    "check:request-state": "node scripts/check-request-state.mjs"
+    "check:request-state": "node scripts/check-request-state.mjs",
+    "check:cancellation": "node scripts/check-cancellation.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

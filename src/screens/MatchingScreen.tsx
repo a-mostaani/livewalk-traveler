@@ -30,7 +30,7 @@ export function MatchingScreen({
         <View style={styles.radar}>
           <View style={styles.ringOuter} />
           <View style={styles.ringInner} />
-          <Ionicons name={accepted ? 'checkmark' : 'radio'} size={24} color={colors.white} />
+          <Ionicons name={accepted ? 'checkmark' : 'radio'} size={24} color={colors.onDark} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.pendingTitle}>{accepted ? `${remoteRequest?.guide?.name} accepted` : 'Waiting for guide response'}</Text>
@@ -50,7 +50,7 @@ export function MatchingScreen({
           {request.interests.slice(0, 4).map((interest) => <Pill key={interest} label={interest} />)}
         </View>
         <View style={styles.syncRow}>
-          <Ionicons name="sync" size={18} color={colors.green} />
+          <Ionicons name="sync" size={18} color={colors.success} />
           <Text style={styles.syncText}>Polling the backend every 2 seconds for near real-time booking updates.</Text>
         </View>
       </Card>
@@ -61,17 +61,17 @@ export function MatchingScreen({
 }
 
 const styles = StyleSheet.create({
-  pendingCard: { backgroundColor: colors.ink, borderRadius: 28, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 14 },
-  radar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  ringOuter: { position: 'absolute', width: 84, height: 84, borderRadius: 42, borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)' },
-  ringInner: { position: 'absolute', width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.36)' },
-  pendingTitle: { color: colors.white, fontSize: 18, fontWeight: '900' },
-  pendingBody: { color: 'rgba(255,255,255,0.72)', marginTop: 4, lineHeight: 19, fontWeight: '700' },
+  pendingCard: { backgroundColor: colors.textPrimary, borderRadius: 28, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 14 },
+  radar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  ringOuter: { position: 'absolute', width: 84, height: 84, borderRadius: 42, borderWidth: 1, borderColor: colors.onDarkMuted },
+  ringInner: { position: 'absolute', width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: colors.onDarkMuted },
+  pendingTitle: { color: colors.onDark, fontSize: 18, fontWeight: '900' },
+  pendingBody: { color: colors.onDarkMuted, marginTop: 4, lineHeight: 19, fontWeight: '700' },
   requestCard: { gap: 10 },
-  sectionTitle: { color: colors.ink, fontWeight: '900', fontSize: 18 },
-  route: { color: colors.ink, fontWeight: '900', fontSize: 17, lineHeight: 24 },
+  sectionTitle: { color: colors.textPrimary, fontWeight: '900', fontSize: 18 },
+  route: { color: colors.textPrimary, fontWeight: '900', fontSize: 17, lineHeight: 24 },
   stats: { flexDirection: 'row', gap: 8, marginVertical: 4 },
   pills: { flexDirection: 'row', flexWrap: 'wrap' },
-  syncRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: '#EAF7F2', borderRadius: 16, padding: 12 },
-  syncText: { color: colors.ink, flex: 1, fontWeight: '800', lineHeight: 20 },
+  syncRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.surfaceSuccess, borderRadius: 16, padding: 12 },
+  syncText: { color: colors.textPrimary, flex: 1, fontWeight: '800', lineHeight: 20 },
 });

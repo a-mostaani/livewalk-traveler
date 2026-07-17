@@ -35,7 +35,7 @@ npm start
 ```
 
 5. Scan the QR code with Expo Go.
-6. In the app, move through the MVP by tapping the Start/Request/Review/Match/Booked/Live/Summary step labels or the bottom Previous/Next buttons. The main screen area scrolls vertically on smaller Android displays.
+6. The Start/Request/Review/Match/Booked/Live/Summary strip is a read-only booking-progress indicator. Use the persistent Previous/Next buttons and the screen CTAs to move through the MVP. The main screen area scrolls vertically on smaller Android displays.
 
 ### Option B: Android emulator
 1. Install Android Studio and create an Android virtual device.
@@ -63,6 +63,10 @@ npx expo start --dev-client
 ```
 
 For the current demo APKs, keep using the published installable Android builds from the LiveWalk APK download page. This gate should not change current Traveler demo behavior.
+
+## Runtime configuration
+
+Copy `.env.example` to `.env` for local development, or set the same variables in the EAS build environment selected by the profile (`development`, `preview`, or `production`). `app.config.js` reads `MAPBOX_TOKEN_MOBILE` during EAS configuration and writes it to `extra.mapboxTokenMobile`, which the Android and iOS runtime selects. Use the real restricted public Mapbox token in EAS only; never commit it or substitute a fallback token. `LIVEKIT_WS_URL` is a public WebSocket endpoint and is copied into `extra.livekitWsUrl`; it identifies the LiveKit server but does not authorize a room connection. Keep LiveKit API credentials and all signing material out of this app.
 
 ## Useful development commands
 

@@ -96,12 +96,20 @@ export async function estimateWalkRequest(request: WalkRequest) {
   });
 }
 
+export async function getWalkRequests() {
+  return api<{ ok: true; requests: MarketplaceRequest[] }>('/api/requests');
+}
+
 export async function getWalkRequest(id: string) {
   return api<{ ok: true; request: MarketplaceRequest; session?: LiveSession | null }>(`/api/requests/${id}`);
 }
 
 export async function startSession(sessionId: string) {
   return api<{ ok: true; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${sessionId}/start`, { method: 'POST' });
+}
+
+export async function endSession(sessionId: string) {
+  return api<{ ok: true; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${sessionId}/end`, { method: 'POST' });
 }
 
 export async function getSessionStatus(sessionId: string) {

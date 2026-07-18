@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, colors } from './src/components/Primitives';
+import { QaBuildBadge } from './src/components/QaBuildBadge';
 import { defaultRequest } from './src/data/mock';
 import { stageLabels, stageOrder, stageState, canOpenStage } from './src/flow';
 import { useSession } from './src/hooks/useSession';
@@ -140,6 +141,7 @@ function TravelerApp() {
             </View>
           </View>
           <Text style={styles.backendLine} numberOfLines={1}>{user ? `${user.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
+          {user ? <QaBuildBadge /> : null}
           {user ? <StageHeader currentIndex={currentIndex} screen={screen} /> : null}
           <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator>
             {authBusy ? (

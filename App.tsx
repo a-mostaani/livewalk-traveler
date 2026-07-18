@@ -54,6 +54,12 @@ function TravelerApp() {
     }
   }, [screen, sessionEnded]);
 
+  useEffect(() => {
+    if (screen !== 'onboarding' || !remoteRequest) return;
+    if (remoteRequest.status === 'pending') navigateTo('matching');
+    if (remoteRequest.status === 'accepted' || remoteRequest.status === 'live') navigateTo('confirmed');
+  }, [remoteRequest?.id, remoteRequest?.status, screen]);
+
   const goPrevious = () => {
     if (!isFirstScreen) navigateTo(stageOrder[currentIndex - 1]);
   };

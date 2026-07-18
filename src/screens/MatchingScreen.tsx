@@ -18,7 +18,7 @@ export function MatchingScreen({
 }: {
   request: WalkRequest;
   remoteRequest?: MarketplaceRequest;
-  onCheck: () => void;
+  onCheck: () => Promise<unknown>;
   onReset: () => void;
   onCancel: () => void;
   isCancelling: boolean;
@@ -62,7 +62,7 @@ export function MatchingScreen({
           <Text style={styles.syncText}>Polling the backend every 2 seconds for near real-time booking updates.</Text>
         </View>
       </Card>
-      <Button label="Check now" icon="refresh" onPress={onCheck} disabled={isCancelling} style={{ marginTop: 18 }} />
+      <Button label="Check now" icon="refresh" onPress={() => { void onCheck().catch(() => {}); }} disabled={isCancelling} style={{ marginTop: 18 }} />
       {cancellable ? <Button label={isCancelling ? 'Cancelling request…' : 'Cancel request'} icon="close-circle" variant="danger" onPress={onCancel} disabled={isCancelling} style={{ marginTop: 8 }} /> : <Button label="Start over locally" variant="ghost" onPress={onReset} style={{ marginTop: 8 }} />}
       {cancelError ? <Text accessibilityLiveRegion="polite" style={styles.cancelError}>{cancelError}</Text> : null}
     </View>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cancelWalkRequest, createWalkRequest, endSession, estimateWalkRequest, getSessionStatus, getWalkRequest, getWalkRequests, health, sendSessionMessage } from '../api';
 import { hasRouteCoordinates, type Estimate, type LiveSession, type MarketplaceRequest, type Screen, type SessionMessage, type WalkRequest } from '../types';
 import { getWalkHistoryState, type WalkHistoryState } from '../flow';
-import { isPreLiveRequest } from '../requestState';
+import { isPreLiveRequest, selectResumableRequest, shouldApplyRemoteRequest, SingleFlightRefresh } from '../requestState';
 
 type UseSessionArgs = {
   enabled: boolean;
@@ -29,6 +29,16 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
   const [estimateError, setEstimateError] = useState<string | undefined>();
   const estimateSequence = useRef(0);
   const cancelInFlight = useRef<string | undefined>(undefined);
+  const requestRef = useRef<MarketplaceRequest | undefined>(undefined);
+  const enabledRef = useRef(enabled);
+  const currentScreenRef = useRef(currentScreen);
+  const onAcceptedRef = useRef(onAccepted);
+  const refreshFlightRef = useRef(new SingleFlightRefresh());
+
+  requestRef.current = request;
+  enabledRef.current = enabled;
+  currentScreenRef.current = currentScreen;
+  onAcceptedRef.current = onAccepted;
 
   const cancelBusy = cancellingRequestId === request?.id;
 
@@ -64,6 +74,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     try {
       const data = await getWalkRequests();
       setRequestHistory(data.requests);
+      setRequest((current) => current ?? selectResumableRequest(data.requests));
       setHistoryLoaded(true);
     } catch {
       setHistoryUnavailable(true);
@@ -76,30 +87,43 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     void loadWalkHistory();
   }, [loadWalkHistory]);
 
-  const refresh = useCallback(async () => {
-    await health();
-    setApiOnline(true);
-    setApiNote('Backend connected');
+  const refresh = useCallback(() => refreshFlightRef.current.run(async () => {
+    if (!enabledRef.current) return undefined;
 
-    if (!request?.id) return undefined;
-    const data = await getWalkRequest(request.id);
-    setRequest(data.request);
-    if (data.session) setLiveSession(data.session);
-    if (data.request.status === 'completed') setApiNote('Walk complete');
+    try {
+      await health();
+      setApiOnline(true);
+      setApiNote('Backend connected');
 
-    if ((data.request.status === 'accepted' || data.request.status === 'live') && currentScreen === 'matching') {
-      onAccepted();
+      const currentRequest = requestRef.current;
+      const requestId = currentRequest?.id;
+      if (!requestId) return undefined;
+
+      const data = await getWalkRequest(requestId);
+      if (!shouldApplyRemoteRequest(requestRef.current, data.request) || cancelInFlight.current === requestId) return undefined;
+      setRequest(data.request);
+      if (data.session) setLiveSession(data.session);
+      if (data.request.status === 'completed') setApiNote('Walk complete');
+
+      if ((data.request.status === 'accepted' || data.request.status === 'live') && currentScreenRef.current === 'matching') {
+        onAcceptedRef.current();
+      }
+
+      if (data.request.sessionId) {
+        const session = await getSessionStatus(data.request.sessionId);
+        if (!shouldApplyRemoteRequest(requestRef.current, data.request) || cancelInFlight.current === requestId) return undefined;
+        setMessages(session.messages);
+        setLiveSession(session.session);
+        if (session.session.status === 'ended') setApiNote('Walk complete');
+      }
+
+      return data.request;
+    } catch (error) {
+      setApiOnline(false);
+      setApiNote('Backend reconnecting');
+      throw error;
     }
-
-    if (data.request.sessionId) {
-      const session = await getSessionStatus(data.request.sessionId);
-      setMessages(session.messages);
-      setLiveSession(session.session);
-      if (session.session.status === 'ended') setApiNote('Walk complete');
-    }
-
-    return data.request;
-  }, [request?.id, currentScreen, onAccepted]);
+  }), []);
 
   useEffect(() => {
     if (!enabled) {

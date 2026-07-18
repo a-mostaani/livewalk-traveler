@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MAPBOX_TOKEN } from '../config';
+import { classifyMapboxPlaceSearch, isAbortError, mapboxPlaceSearchUrl } from '../lib/mapboxPlaceSearch';
 import type { RequestDraftPoint, RequestPoint } from '../types';
 import { isRequestPoint } from '../types';
 import { colors } from './Primitives';
@@ -23,16 +24,6 @@ function placeResult(feature: MapboxFeature): PlaceResult | undefined {
   const label = String(feature.properties?.full_address || feature.place_formatted || feature.properties?.name_preferred || '').trim();
   if (!label || !Number.isFinite(lat) || !Number.isFinite(lng)) return undefined;
   return { label, lat, lng };
-}
-
-function mapboxSearchUrl(query: string) {
-  const params = new URLSearchParams({
-    q: query,
-    autocomplete: 'true',
-    limit: '5',
-    access_token: MAPBOX_TOKEN,
-  });
-  return `https://api.mapbox.com/search/geocode/v6/forward?${params.toString()}`;
 }
 
 export function PlaceSearchField({
@@ -74,15 +65,25 @@ export function PlaceSearchField({
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(mapboxSearchUrl(trimmedQuery), { signal: controller.signal });
-        if (!response.ok) throw new Error('Place search failed');
+        const response = await fetch(mapboxPlaceSearchUrl(trimmedQuery, MAPBOX_TOKEN), { signal: controller.signal });
+        if (!response.ok) {
+          const diagnostic = classifyMapboxPlaceSearch(response.status);
+          console.warn('Mapbox place search failed', { category: diagnostic.category, status: response.status });
+          setResults([]);
+          setError(diagnostic.message);
+          return;
+        }
         const payload = await response.json() as { features?: MapboxFeature[] };
         const places = Array.isArray(payload.features) ? payload.features.map(placeResult).filter((item): item is PlaceResult => Boolean(item)) : [];
+        const diagnostic = classifyMapboxPlaceSearch(response.status, places.length);
+        if (diagnostic.category === 'empty-result') console.info('Mapbox place search completed', { category: diagnostic.category, status: response.status });
         setResults(places);
       } catch (searchError) {
-        if ((searchError as { name?: string }).name !== 'AbortError') {
+        if (!isAbortError(searchError)) {
+          const diagnostic = classifyMapboxPlaceSearch(undefined);
+          console.warn('Mapbox place search failed', { category: diagnostic.category });
           setResults([]);
-          setError('Could not search places. Check the connection and try again.');
+          setError(diagnostic.message);
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);

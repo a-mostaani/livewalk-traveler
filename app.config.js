@@ -1,22 +1,18 @@
 const DEFAULT_API_BASE_URL = 'https://rendezvous-livewalk-api.webpeter.com';
-const EMBEDDED_MOBILE_MAPBOX_PUBLIC_TOKEN = "pk.your_mapbox_public_token_here";
 
 function cleanUrl(value) {
   return value.replace(/\/+$/, '');
 }
 
-function resolveMobileMapboxToken() {
-  const override = process.env.MAPBOX_TOKEN_MOBILE?.trim();
-  const token = override ?? EMBEDDED_MOBILE_MAPBOX_PUBLIC_TOKEN;
-  const source = override ? 'environment' : 'embedded fallback';
-  const valid = token.startsWith('pk.') && token.length >= 20;
+function requiredMobileMapboxToken() {
+  const token = process.env.MAPBOX_TOKEN_MOBILE?.trim() ?? '';
+  const valid = token.startsWith('pk.') && token.length >= 20 && !token.includes('your_mapbox_public_token_here');
 
   if (!valid) {
-    console.warn('Mapbox mobile token is missing or invalid; map features will be unavailable in this build.');
-    return { token: '', source, diagnostic: 'Mapbox mobile token is missing or invalid.' };
+    throw new Error('MAPBOX_TOKEN_MOBILE must be a valid public Mapbox token in the selected build environment.');
   }
 
-  return { token, source, diagnostic: '' };
+  return token;
 }
 
 module.exports = ({ config }) => {
@@ -25,7 +21,7 @@ module.exports = ({ config }) => {
   );
   const livekitWsUrl = cleanUrl(process.env.LIVEKIT_WS_URL?.trim() ?? '');
   const mapboxTokenWeb = process.env.MAPBOX_TOKEN_WEB?.trim() ?? '';
-  const mobileMapbox = resolveMobileMapboxToken();
+  const mapboxTokenMobile = requiredMobileMapboxToken();
 
   return {
     ...config,
@@ -53,9 +49,8 @@ module.exports = ({ config }) => {
       apiBaseUrl,
       livekitWsUrl,
       mapboxTokenWeb,
-      mapboxTokenMobile: mobileMapbox.token,
-      mapboxTokenMobileSource: mobileMapbox.source,
-      mapboxTokenMobileDiagnostic: mobileMapbox.diagnostic,
+      mapboxTokenMobile,
+      mapboxTokenMobileSource: 'environment',
     },
   };
 };

@@ -1,15 +1,22 @@
 const DEFAULT_API_BASE_URL = 'https://rendezvous-livewalk-api.webpeter.com';
+const EMBEDDED_MOBILE_MAPBOX_PUBLIC_TOKEN = "pk.your_mapbox_public_token_here";
 
 function cleanUrl(value) {
   return value.replace(/\/+$/, '');
 }
 
-function requiredBuildEnv(name) {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`${name} is required for native place search. Configure it in the selected EAS build environment.`);
+function resolveMobileMapboxToken() {
+  const override = process.env.MAPBOX_TOKEN_MOBILE?.trim();
+  const token = override ?? EMBEDDED_MOBILE_MAPBOX_PUBLIC_TOKEN;
+  const source = override ? 'environment' : 'embedded fallback';
+  const valid = token.startsWith('pk.') && token.length >= 20;
+
+  if (!valid) {
+    console.warn('Mapbox mobile token is missing or invalid; map features will be unavailable in this build.');
+    return { token: '', source, diagnostic: 'Mapbox mobile token is missing or invalid.' };
   }
-  return value;
+
+  return { token, source, diagnostic: '' };
 }
 
 module.exports = ({ config }) => {
@@ -18,7 +25,7 @@ module.exports = ({ config }) => {
   );
   const livekitWsUrl = cleanUrl(process.env.LIVEKIT_WS_URL?.trim() ?? '');
   const mapboxTokenWeb = process.env.MAPBOX_TOKEN_WEB?.trim() ?? '';
-  const mapboxTokenMobile = requiredBuildEnv('MAPBOX_TOKEN_MOBILE');
+  const mobileMapbox = resolveMobileMapboxToken();
 
   return {
     ...config,
@@ -46,7 +53,9 @@ module.exports = ({ config }) => {
       apiBaseUrl,
       livekitWsUrl,
       mapboxTokenWeb,
-      mapboxTokenMobile,
+      mapboxTokenMobile: mobileMapbox.token,
+      mapboxTokenMobileSource: mobileMapbox.source,
+      mapboxTokenMobileDiagnostic: mobileMapbox.diagnostic,
     },
   };
 };

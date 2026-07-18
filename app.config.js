@@ -1,18 +1,35 @@
 const DEFAULT_API_BASE_URL = 'https://rendezvous-livewalk-api.webpeter.com';
+const COMMITTED_PUBLIC_MOBILE_MAPBOX_TOKEN = 'pk.eyJ1IjoiYS1tb3N0IiwiYSI6ImNtcmh0M2s2ODFmbHAyeHF6N3k2NjNzdHAifQ.fC7tosE6isRH40dtUXq2Vw';
 
 function cleanUrl(value) {
   return value.replace(/\/+$/, '');
 }
 
-function requiredMobileMapboxToken() {
-  const token = process.env.MAPBOX_TOKEN_MOBILE?.trim() ?? '';
-  const valid = token.startsWith('pk.') && token.length >= 20 && !token.includes('your_mapbox_public_token_here');
+function isPublicMapboxToken(value) {
+  return value.length >= 20 && /^pk\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value);
+}
 
-  if (!valid) {
-    throw new Error('MAPBOX_TOKEN_MOBILE must be a valid public Mapbox token in the selected build environment.');
+function resolveMobileMapboxToken() {
+  const override = process.env.MAPBOX_TOKEN_MOBILE?.trim() ?? '';
+  const fallback = COMMITTED_PUBLIC_MOBILE_MAPBOX_TOKEN.trim();
+
+  if (isPublicMapboxToken(override)) {
+    return { token: override, source: 'environment', diagnostic: '' };
   }
 
-  return token;
+  if (isPublicMapboxToken(fallback)) {
+    return {
+      token: fallback,
+      source: 'committed-fallback',
+      diagnostic: override ? 'MAPBOX_TOKEN_MOBILE is invalid; using the committed public mobile token.' : '',
+    };
+  }
+
+  return {
+    token: '',
+    source: 'unavailable',
+    diagnostic: 'Mapbox place search is unavailable because no valid public mobile token is configured.',
+  };
 }
 
 module.exports = ({ config }) => {
@@ -21,7 +38,7 @@ module.exports = ({ config }) => {
   );
   const livekitWsUrl = cleanUrl(process.env.LIVEKIT_WS_URL?.trim() ?? '');
   const mapboxTokenWeb = process.env.MAPBOX_TOKEN_WEB?.trim() ?? '';
-  const mapboxTokenMobile = requiredMobileMapboxToken();
+  const mobileMapbox = resolveMobileMapboxToken();
 
   return {
     ...config,
@@ -49,8 +66,9 @@ module.exports = ({ config }) => {
       apiBaseUrl,
       livekitWsUrl,
       mapboxTokenWeb,
-      mapboxTokenMobile,
-      mapboxTokenMobileSource: 'environment',
+      mapboxTokenMobile: mobileMapbox.token,
+      mapboxTokenMobileSource: mobileMapbox.source,
+      mapboxTokenMobileDiagnostic: mobileMapbox.diagnostic,
     },
   };
 };

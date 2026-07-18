@@ -10,11 +10,13 @@ const search = fs.readFileSync(new URL('../src/components/PlaceSearchField.tsx',
 const liveMap = fs.readFileSync(new URL('../src/components/TravelVisuals.tsx', import.meta.url), 'utf8');
 const eas = JSON.parse(fs.readFileSync(new URL('../eas.json', import.meta.url), 'utf8'));
 
+assert.match(appConfigSource, /COMMITTED_PUBLIC_MOBILE_MAPBOX_TOKEN/);
 assert.match(appConfigSource, /process\.env\.MAPBOX_TOKEN_MOBILE/);
-assert.match(appConfigSource, /requiredMobileMapboxToken/);
-assert.doesNotMatch(appConfigSource, /EMBEDDED_MOBILE_MAPBOX_PUBLIC_TOKEN/);
+assert.match(appConfigSource, /resolveMobileMapboxToken/);
+assert.match(config, /mapboxTokenMobile/);
 assert.match(config, /Platform\.OS === 'web' \? MAPBOX_TOKEN_WEB : MAPBOX_TOKEN_MOBILE/);
 assert.match(search, /MAPBOX_TOKEN/);
+assert.match(search, /mapboxPlaceSearchUrl\(trimmedQuery, MAPBOX_TOKEN\)/);
 assert.match(search, /classifyMapboxPlaceSearch/);
 assert.match(search, /isAbortError/);
 assert.match(liveMap, /mapboxToken/);
@@ -32,13 +34,22 @@ function resolveWithToken(value) {
 }
 
 try {
-  assert.throws(() => resolveWithToken(undefined), /MAPBOX_TOKEN_MOBILE/);
-  assert.throws(() => resolveWithToken('pk.your_mapbox_public_token_here'), /MAPBOX_TOKEN_MOBILE/);
+  const fallback = resolveWithToken(undefined);
+  assert.equal(fallback.extra.mapboxTokenMobileSource, 'committed-fallback');
+  assert.match(fallback.extra.mapboxTokenMobile, /^pk\./);
+  assert.ok(fallback.extra.mapboxTokenMobile.length >= 20);
+  assert.equal(fallback.extra.mapboxTokenMobileDiagnostic, '');
 
-  const overrideToken = 'pk.test-mapbox-public-override-token-1234567890';
+  const invalidOverride = resolveWithToken('not-a-public-mapbox-token');
+  assert.equal(invalidOverride.extra.mapboxTokenMobileSource, 'committed-fallback');
+  assert.equal(invalidOverride.extra.mapboxTokenMobile, fallback.extra.mapboxTokenMobile);
+  assert.match(invalidOverride.extra.mapboxTokenMobileDiagnostic, /invalid/);
+
+  const overrideToken = 'pk.test-mapbox-public-override-token.1234567890';
   const overridden = resolveWithToken(overrideToken);
   assert.equal(overridden.extra.mapboxTokenMobileSource, 'environment');
   assert.equal(overridden.extra.mapboxTokenMobile, overrideToken);
+  assert.equal(overridden.extra.mapboxTokenMobileDiagnostic, '');
 } finally {
   if (originalToken === undefined) delete process.env.MAPBOX_TOKEN_MOBILE;
   else process.env.MAPBOX_TOKEN_MOBILE = originalToken;
@@ -66,4 +77,4 @@ assert.equal(encodedUrl.searchParams.get('q'), 'Café & Main');
 assert.equal(encodedUrl.searchParams.get('autocomplete'), 'true');
 assert.equal(encodedUrl.searchParams.get('limit'), '5');
 
-console.log('✓ Mapbox config requires a build-environment mobile token and place-search diagnostics cover auth, rate, network, and empty-result states.');
+console.log('✓ Mobile Mapbox config resolves a committed public fallback, honors valid overrides, and preserves unavailable-state diagnostics.');

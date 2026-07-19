@@ -26,6 +26,22 @@ test('API adapter sends bearer auth and real route coordinates to the estimate e
   expect(JSON.parse(String(init?.body))).toMatchObject({ origin: draft.origin, destination: draft.destination, durationMinutes: 45 });
 });
 
+test('API adapter calls the browser fetch function without rebinding its receiver', async () => {
+  let receiver: unknown;
+  const fetcher = function (this: unknown) {
+    receiver = this;
+    return Promise.resolve(new Response(JSON.stringify({ ok: true, backend: 'test', time: new Date().toISOString() }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+  } as typeof fetch;
+  const client = new LiveWalkApi('https://api.example.test', fetcher);
+
+  await client.health();
+
+  expect(receiver).toBeUndefined();
+});
+
 test('API adapter surfaces unauthorized responses as typed session errors', async () => {
   const fetcher = vi.fn(async () => new Response(JSON.stringify({ ok: false, error: 'Login required' }), { status: 401, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
   const client = new LiveWalkApi('https://api.example.test', fetcher);

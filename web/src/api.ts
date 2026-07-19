@@ -43,7 +43,8 @@ export class LiveWalkApi {
   private async request<T>(path: string, init: RequestInit = {}, token = ''): Promise<T> {
     let response: Response;
     try {
-      response = await this.fetcher(`${this.baseUrl}${path}`, {
+      const fetcher = this.fetcher;
+      response = await fetcher(`${this.baseUrl}${path}`, {
         ...init,
         headers: {
           'content-type': 'application/json',

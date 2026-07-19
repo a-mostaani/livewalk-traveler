@@ -136,3 +136,15 @@ Functional vertical slice now included:
 6. Both sides can post/read basic session messages.
 
 For a clean demo, use the protected backend demo seed/reset flow; do not expose destructive reset publicly in the app.
+
+## Traveler web application
+
+The production web client lives under `web/` and uses the same LiveWalk marketplace API as the Traveler and Guide mobile apps.
+
+```bash
+npm run web:typecheck
+npm run web:test
+MAPBOX_TOKEN_WEB=... VITE_MAPBOX_TOKEN="$MAPBOX_TOKEN_WEB" npm run web:build
+```
+
+The Mapbox public browser token is injected only at build time through `VITE_MAPBOX_TOKEN`; no real token belongs in tracked source. Browser authentication uses `sessionStorage`, validates restoration through `/api/auth/me`, calls `/api/auth/logout` on sign-out, and clears the local token on sign-out or an unauthorized response. Quotes must come from `/api/requests/estimate` and remain tied to the exact request draft before `/api/requests` can submit it.

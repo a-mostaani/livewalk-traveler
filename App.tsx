@@ -140,8 +140,10 @@ function TravelerApp() {
               <Text style={styles.statusText}>{apiOnline ? 'Live' : 'Sync'}</Text>
             </View>
           </View>
-          <Text style={styles.backendLine} numberOfLines={1}>{user ? `${user.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
-          {user ? <QaBuildBadge /> : null}
+          <View style={styles.headerMeta}>
+            <Text style={styles.backendLine} numberOfLines={1}>{user ? `${user.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
+            <QaBuildBadge />
+          </View>
           {user ? <StageHeader currentIndex={currentIndex} screen={screen} /> : null}
           <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" nestedScrollEnabled showsVerticalScrollIndicator>
             {authBusy ? (
@@ -230,6 +232,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accentWarm },
   statusDotOnline: { backgroundColor: colors.success },
   statusText: { color: colors.textPrimary, fontWeight: '900', fontSize: 11 },
+  headerMeta: { paddingTop: 1 },
   backendLine: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', paddingHorizontal: 18, paddingBottom: 7 },
   stageHeader: { backgroundColor: colors.surface, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 9 },
   stageHeaderCopy: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8 },

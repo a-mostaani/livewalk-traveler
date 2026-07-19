@@ -28,6 +28,7 @@ const pairs = [
   ['warm accent action', 'onAction', 'accentWarm', 4.5],
   ['disabled text on disabled fill', 'disabledText', 'disabled', 4.5],
   ['on-dark muted text', 'onDarkMuted', 'textPrimary', 4.5],
+  ['QA build badge label', 'qaBuildBadgeText', 'qaBuildBadgeBackground', 4.5],
 ];
 
 for (const [label, foregroundName, backgroundName, minimum] of pairs) {

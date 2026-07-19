@@ -26,4 +26,7 @@ export const colors = {
   onDark: '#FFFFFF',
   onDarkMuted: '#D9E7F1',
   overlay: '#0B1F3A',
+  qaBuildBadgeBackground: '#4A1D00',
+  qaBuildBadgeBorder: '#FFB547',
+  qaBuildBadgeText: '#FFFFFF',
 } as const;

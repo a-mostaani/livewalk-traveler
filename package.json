@@ -17,7 +17,11 @@
     "check:live-session": "node scripts/check-live-session.mjs",
     "check:request-state": "node scripts/check-request-state.mjs",
     "check:cancellation": "node scripts/check-cancellation.mjs",
-    "check:session-sync": "node scripts/check-session-sync.mjs"
+    "check:session-sync": "node scripts/check-session-sync.mjs",
+    "web:dev": "vite --config web/vite.config.ts",
+    "web:typecheck": "tsc --noEmit -p web/tsconfig.json",
+    "web:test": "vitest run --config web/vite.config.ts",
+    "web:build": "vite build --config web/vite.config.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",
@@ -38,7 +42,14 @@
     "react-native-web": "^0.20.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "~19.0.10",
-    "typescript": "~5.8.3"
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^26.1.0",
+    "typescript": "~5.8.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.7"
   }
 }

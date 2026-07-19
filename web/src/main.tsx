@@ -5,7 +5,11 @@ import { AuthProvider } from './auth';
 import './styles.css';
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => undefined));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+      .then((registration) => registration.update())
+      .catch(() => undefined);
+  });
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

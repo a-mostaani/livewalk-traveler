@@ -30,5 +30,5 @@ test('API adapter surfaces unauthorized responses as typed session errors', asyn
   const fetcher = vi.fn(async () => new Response(JSON.stringify({ ok: false, error: 'Login required' }), { status: 401, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
   const client = new LiveWalkApi('https://api.example.test', fetcher);
 
-  await expect(client.listRequests('expired')).rejects.toEqual(expect.objectContaining<ApiError>({ status: 401, message: 'Your session expired. Sign in again.' }));
+  await expect(client.listRequests('expired')).rejects.toEqual(expect.objectContaining({ name: 'ApiError', status: 401, message: 'Your session expired. Sign in again.' }));
 });

@@ -49,6 +49,7 @@ function createAppConfig(config, env = process.env) {
     scheme: 'livewalk',
     userInterfaceStyle: 'light',
     newArchEnabled: false,
+    plugins: ['expo-dev-client'],
     android: {
       package: 'com.livewalk.traveler',
       adaptiveIcon: {

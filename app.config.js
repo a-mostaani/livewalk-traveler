@@ -70,6 +70,9 @@ function createAppConfig(config, env = process.env) {
       mapboxTokenMobile: mobileMapbox.token,
       mapboxTokenMobileSource: mobileMapbox.source,
       mapboxTokenMobileDiagnostic: mobileMapbox.diagnostic,
+      eas: {
+        projectId: '3fea3bd7-465a-4116-93da-1547c6b3d330',
+      },
     },
   };
 }

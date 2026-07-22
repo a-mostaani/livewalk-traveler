@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, colors } from '../components/Primitives';
-import { LiveGuideMap, LiveProgressRail } from '../components/TravelVisuals';
-import { TravelerVideoView } from '../components/TravelerVideoView';
+import { LiveGuideMap, LiveProgressRail, VideoPlaceholder } from '../components/TravelVisuals';
 import { MAPBOX_TOKEN } from '../config';
 import { LiveSession, MarketplaceRequest, SessionMessage } from '../api';
 import type { SessionLocation } from '../types';
-import { useTravelerSubscribe } from '../session/useTravelerSubscribe';
 
 export function LiveWalkScreen({
   remoteRequest,
@@ -25,7 +23,6 @@ export function LiveWalkScreen({
   const [talking, setTalking] = useState(false);
   const [translation, setTranslation] = useState(true);
   const sessionReady = Boolean(remoteRequest?.sessionId && remoteRequest?.status === 'live');
-  const subscribe = useTravelerSubscribe(remoteRequest?.sessionId ?? undefined, sessionReady);
   const [actionNote, setActionNote] = useState('Live controls send updates to the guide through the shared session.');
   const liveControlNote = sessionReady
     ? actionNote
@@ -80,7 +77,6 @@ export function LiveWalkScreen({
     if (!sessionReady) return;
     const ended = await onEnd();
     if (ended) {
-      subscribe.stop();
       setActionNote('Shared walk ended. Preparing your summary.');
       return;
     }
@@ -97,7 +93,7 @@ export function LiveWalkScreen({
         </View>
         <View style={styles.timerPill}><Text style={styles.timerText}>{remoteRequest?.status === 'live' ? 'LIVE' : 'Ready'}</Text></View>
       </View>
-      <TravelerVideoView connectionProps={subscribe.connectionProps} guideName={remoteRequest?.guide?.name?.trim() || 'Guide'} routeLabel={remoteRequest?.origin.label || 'live route'} />
+      <VideoPlaceholder guideName={remoteRequest?.guide?.name?.trim() || 'Guide'} routeLabel={remoteRequest?.origin.label || 'live route'} />
       <Card style={styles.controlCard}>
         <View style={styles.controlGrid}>
           <TouchableOpacity

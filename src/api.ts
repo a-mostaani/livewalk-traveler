@@ -128,16 +128,3 @@ export async function sendSessionMessage(sessionId: string, text: string) {
     body: JSON.stringify({ text }),
   });
 }
-
-export type LiveKitTokenResponse = {
-  ok: true;
-  token: string;
-  room: string;
-  identity: string;
-  canPublish: boolean;
-  expiresIn: number;
-};
-
-export async function fetchLiveKitToken(sessionId: string) {
-  return api<LiveKitTokenResponse>(`/api/sessions/${sessionId}/livekit-token`, { method: 'POST' });
-}

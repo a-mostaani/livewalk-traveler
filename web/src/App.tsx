@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { ApiError, liveWalkApi } from './api';
 import { useAuth } from './auth';
 import { AuthPanel } from './components/AuthPanel';
 import { RequestCard } from './components/RequestCard';
 import { RequestForm } from './components/RequestForm';
 import type { WalkRequest } from './types';
+
+// livekit-client is a large SDK (~700KB) - only the traveler who actually
+// opens a live session should pay for downloading it, not every dashboard visit.
+const LiveSessionPanel = lazy(() => import('./components/LiveSessionPanel').then((module) => ({ default: module.LiveSessionPanel })));
 
 export function App() {
   const auth = useAuth();
@@ -25,6 +29,7 @@ function TravelerDashboard() {
   const [error, setError] = useState('');
   const [lastSynced, setLastSynced] = useState<Date>();
   const [cancellingId, setCancellingId] = useState('');
+  const [liveRequestId, setLiveRequestId] = useState('');
 
   const refresh = useCallback(async (quiet = false) => {
     if (!auth.token) return;
@@ -64,6 +69,14 @@ function TravelerDashboard() {
     document.getElementById('your-walks')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const liveRequest = requests.find((item) => item.id === liveRequestId && item.status === 'live');
+
+  const walkEnded = (updated: WalkRequest) => {
+    setRequests((current) => current.map((item) => item.id === updated.id ? updated : item));
+    setLastSynced(new Date());
+    setLiveRequestId('');
+  };
+
   const cancel = async (request: WalkRequest) => {
     if (!window.confirm('Cancel this request? Guides will no longer be able to accept it.')) return;
     setCancellingId(request.id);
@@ -97,6 +110,16 @@ function TravelerDashboard() {
           <div className="truth-card"><span>◇</span><div><strong>One source of truth</strong><p>Quotes, requests and status come directly from the shared LivelyWalk backend.</p></div></div>
         </section>
         {error ? <div className="message error-message global-message" role="alert"><span>{error}</span><button type="button" onClick={() => void refresh()}>Retry</button></div> : null}
+        {liveRequest ? (
+          <Suspense fallback={<div className="live-session-panel live-session-loading"><span className="spinner" /> Loading live session…</div>}>
+            <LiveSessionPanel
+              token={auth.token}
+              request={liveRequest}
+              onClose={() => setLiveRequestId('')}
+              onEnded={walkEnded}
+            />
+          </Suspense>
+        ) : null}
         <div className="dashboard-grid">
           <RequestForm onCreated={created} />
           <section className="walks-column" id="your-walks" aria-labelledby="walks-heading">
@@ -107,12 +130,12 @@ function TravelerDashboard() {
             {loading ? <div className="empty-state"><span className="spinner spinner-dark" /><h3>Loading your walks</h3><p>Reading the latest status from the shared backend.</p></div> : null}
             {!loading && requests.length === 0 ? <div className="empty-state"><span className="empty-icon">⌖</span><h3>No walk requests yet</h3><p>Your first real request will appear here as soon as the backend confirms it.</p></div> : null}
             <div className="request-list">
-              {requests.map((request) => <RequestCard key={request.id} request={request} cancelling={cancellingId === request.id} onCancel={(item) => void cancel(item)} />)}
+              {requests.map((request) => <RequestCard key={request.id} request={request} cancelling={cancellingId === request.id} onCancel={(item) => void cancel(item)} onJoinLive={(item) => setLiveRequestId(item.id)} />)}
             </div>
           </section>
         </div>
       </main>
-      <footer><span>EXPERIENCE EVERYWHERE LIVE</span><p>Traveler v1 · Quotes and booking state are live · Payments, voice and video are outside this release.</p></footer>
+      <footer><span>EXPERIENCE EVERYWHERE LIVE</span><p>Traveler v1 · Quotes, booking, and the live session (video, map, messages) are live · Payments and two-way voice are outside this release.</p></footer>
     </div>
   );
 }

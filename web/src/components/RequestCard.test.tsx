@@ -36,3 +36,14 @@ test('renders cancelled state without a cancellation control', () => {
   expect(screen.getByText('Cancelled')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Cancel before start' })).not.toBeInTheDocument();
 });
+
+test('offers to join the live session once the guide has started, and not before', async () => {
+  const onJoinLive = vi.fn();
+  const { rerender } = render(<RequestCard request={baseRequest} cancelling={false} onCancel={vi.fn()} onJoinLive={onJoinLive} />);
+  expect(screen.queryByRole('button', { name: 'Join live session' })).not.toBeInTheDocument();
+
+  const liveRequest = { ...baseRequest, status: 'live' as const };
+  rerender(<RequestCard request={liveRequest} cancelling={false} onCancel={vi.fn()} onJoinLive={onJoinLive} />);
+  await userEvent.click(screen.getByRole('button', { name: 'Join live session' }));
+  expect(onJoinLive).toHaveBeenCalledWith(liveRequest);
+});

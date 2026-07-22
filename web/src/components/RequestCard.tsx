@@ -3,9 +3,10 @@ import type { WalkRequest } from '../types';
 
 const timeline = ['Requested', 'Booked', 'Confirmed', 'Live', 'Completed'];
 
-export function RequestCard({ request, cancelling, onCancel }: { request: WalkRequest; cancelling: boolean; onCancel: (request: WalkRequest) => void }) {
+export function RequestCard({ request, cancelling, onCancel, onJoinLive }: { request: WalkRequest; cancelling: boolean; onCancel: (request: WalkRequest) => void; onJoinLive?: (request: WalkRequest) => void }) {
   const status = presentStatus(request.status);
   const canCancel = cancellableStatuses.includes(request.status);
+  const canJoinLive = request.status === 'live' && Boolean(request.sessionId) && Boolean(onJoinLive);
   const start = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(request.scheduledStart));
   const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: request.estimate.currency, maximumFractionDigits: 0 }).format(request.estimate.total);
 
@@ -31,6 +32,7 @@ export function RequestCard({ request, cancelling, onCancel }: { request: WalkRe
       ) : null}
       <div className="request-card-foot">
         <div><strong>{status.detail}</strong><span>Live status from the shared backend</span></div>
+        {canJoinLive ? <button className="button button-primary" type="button" onClick={() => onJoinLive?.(request)}>Join live session</button> : null}
         {canCancel ? <button className="button button-danger-ghost" disabled={cancelling} type="button" onClick={() => onCancel(request)}>{cancelling ? 'Cancelling…' : 'Cancel before start'}</button> : null}
       </div>
     </article>

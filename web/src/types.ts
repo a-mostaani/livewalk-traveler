@@ -55,3 +55,39 @@ export type WalkRequest = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type SessionLocation = {
+  label?: string;
+  lat?: number;
+  lng?: number;
+  accuracy?: number | null;
+  timestamp?: string;
+  progress?: number;
+};
+
+export type LiveSession = {
+  id: string;
+  requestId: string;
+  status: 'ready' | 'live' | 'ended' | 'cancelled';
+  startedAt?: string | null;
+  endedAt?: string | null;
+  location?: SessionLocation | null;
+};
+
+export type SessionMessage = {
+  id: string;
+  sessionId: string;
+  senderRole: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+};
+
+export type LiveKitTokenResponse = {
+  ok: true;
+  token: string;
+  room: string;
+  identity: string;
+  canPublish: boolean;
+  expiresIn: number;
+};

@@ -18,25 +18,6 @@ export function BrandMark() {
   );
 }
 
-export function MiniRouteMap({ compact = false }: { compact?: boolean }) {
-  return (
-    <View style={[styles.map, compact && styles.mapCompact]}>
-      <View style={[styles.mapBlock, styles.blockOne]} />
-      <View style={[styles.mapBlock, styles.blockTwo]} />
-      <View style={[styles.mapBlock, styles.blockThree]} />
-      <View style={styles.routeLine} />
-      <View style={[styles.pin, styles.pinStart]}>
-        <Ionicons name="walk" size={15} color={colors.onAction} />
-      </View>
-      <View style={[styles.pin, styles.pinEnd]}>
-        <Ionicons name="flag" size={14} color={colors.onAction} />
-      </View>
-      <View style={styles.gpsDot} />
-      <Text style={styles.mapLabel}>Live GPS route preview</Text>
-    </View>
-  );
-}
-
 export function VideoPlaceholder({ guideName = 'Guide', routeLabel = 'live route' }: { guideName?: string; routeLabel?: string }) {
   return (
     <View style={styles.video}>
@@ -81,6 +62,7 @@ type LiveMapProps = {
   location?: SessionLocation | null;
   request?: MarketplaceRequest;
   mapboxToken: string;
+  routePolyline?: string;
 };
 
 function numeric(value: number | null | undefined): value is number {
@@ -96,24 +78,81 @@ function pin(size: 's' | 'l', label: string, color: string, lng: number, lat: nu
   return `pin-${size}-${label}+${color}(${lng.toFixed(5)},${lat.toFixed(5)})`;
 }
 
-function buildMapboxImageUrl({ location, request, mapboxToken }: LiveMapProps) {
-  const guide = coordinate(location);
-  const origin = coordinate(request?.origin);
-  const destination = coordinate(request?.destination);
-  if (!guide || !mapboxToken) return undefined;
+// Static Images can render a path overlay, but it only draws geometry that's
+// already been computed - the actual walking route comes from the separate
+// Directions API (see routeGeometry.ts/useRoutePolyline), fetched once and
+// passed in here as an encoded polyline.
+function path(polyline: string, color: string) {
+  return `path-4+${color}-0.85(${encodeURIComponent(polyline)})`;
+}
+
+type RouteMapParams = {
+  origin?: { lat: number; lng: number };
+  destination?: { lat: number; lng: number };
+  guide?: { lat: number; lng: number };
+  routePolyline?: string;
+  mapboxToken: string;
+};
+
+function buildRouteMapImageUrl({ origin, destination, guide, routePolyline, mapboxToken }: RouteMapParams) {
+  if (!mapboxToken) return undefined;
+  const anchor = guide ?? origin ?? destination;
+  if (!anchor) return undefined;
 
   const overlays = [
+    routePolyline ? path(routePolyline, colors.action.slice(1)) : undefined,
     origin ? pin('s', 'a', colors.success.slice(1), origin.lng, origin.lat) : undefined,
     destination ? pin('s', 'b', colors.textPrimary.slice(1), destination.lng, destination.lat) : undefined,
-    pin('l', 'g', colors.action.slice(1), guide.lng, guide.lat),
+    guide ? pin('l', 'g', colors.action.slice(1), guide.lng, guide.lat) : undefined,
   ].filter(Boolean).join(',');
-  const viewport = origin && destination ? 'auto' : `${guide.lng.toFixed(5)},${guide.lat.toFixed(5)},15,0`;
+  const viewport = (origin && destination) || routePolyline ? 'auto' : `${anchor.lng.toFixed(5)},${anchor.lat.toFixed(5)},15,0`;
   return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays}/${viewport}/600x360@2x?access_token=${encodeURIComponent(mapboxToken)}`;
 }
 
-export function LiveGuideMap({ location, request, mapboxToken }: LiveMapProps) {
+export function MiniRouteMap({ origin: originPoint, destination: destinationPoint, mapboxToken, routePolyline, compact = false }: {
+  origin?: { label: string; lat?: number; lng?: number };
+  destination?: { label: string; lat?: number; lng?: number };
+  mapboxToken: string;
+  routePolyline?: string;
+  compact?: boolean;
+}) {
+  const origin = coordinate(originPoint);
+  const destination = coordinate(destinationPoint);
+  const imageUrl = buildRouteMapImageUrl({ origin, destination, routePolyline, mapboxToken });
+
+  if (!origin || !destination) {
+    return (
+      <View style={[styles.map, compact && styles.mapCompact, styles.liveMapWaiting]}>
+        <Ionicons name="map-outline" size={30} color={colors.action} />
+        <Text style={styles.liveMapTitle}>Add both places</Text>
+        <Text style={styles.liveMapText}>The planned route appears here once origin and destination are set.</Text>
+      </View>
+    );
+  }
+
+  if (!imageUrl) {
+    return (
+      <View style={[styles.map, compact && styles.mapCompact, styles.liveMapWaiting]}>
+        <Ionicons name="map-outline" size={30} color={colors.action} />
+        <Text style={styles.liveMapTitle}>Map token missing</Text>
+        <Text style={styles.liveMapText}>The Mapbox public token is not configured for this build.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.map, compact && styles.mapCompact]}>
+      <Image source={{ uri: imageUrl }} style={styles.mapImage} resizeMode="cover" />
+      <Text style={styles.mapLabel}>{routePolyline ? 'Planned walking route' : 'Route preview'}</Text>
+    </View>
+  );
+}
+
+export function LiveGuideMap({ location, request, mapboxToken, routePolyline }: LiveMapProps) {
   const guide = coordinate(location);
-  const imageUrl = buildMapboxImageUrl({ location, request, mapboxToken });
+  const origin = coordinate(request?.origin);
+  const destination = coordinate(request?.destination);
+  const imageUrl = buildRouteMapImageUrl({ origin, destination, guide, routePolyline, mapboxToken });
 
   if (!guide) {
     return (
@@ -195,35 +234,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   mapCompact: { height: 154, borderRadius: 22 },
-  mapBlock: { position: 'absolute', backgroundColor: colors.surface, borderRadius: 18 },
-  blockOne: { left: 18, top: 20, width: 112, height: 70, transform: [{ rotate: '-9deg' }] },
-  blockTwo: { right: 14, top: 42, width: 132, height: 82, transform: [{ rotate: '12deg' }] },
-  blockThree: { left: 58, bottom: 24, width: 170, height: 62, transform: [{ rotate: '5deg' }] },
-  routeLine: {
-    position: 'absolute',
-    left: 58,
-    top: 72,
-    width: 212,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: colors.accentWarm,
-    transform: [{ rotate: '28deg' }],
-  },
-  pin: { position: 'absolute', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  pinStart: { left: 42, top: 56, backgroundColor: colors.success },
-  pinEnd: { right: 42, bottom: 50, backgroundColor: colors.action },
-  gpsDot: {
-    position: 'absolute',
-    left: '54%',
-    top: '48%',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.surface,
-    borderWidth: 5,
-    borderColor: colors.action,
-  },
-  mapLabel: { position: 'absolute', left: 16, bottom: 14, color: colors.actionPressed, fontWeight: '900' },
+  mapLabel: { position: 'absolute', left: 16, bottom: 14, color: colors.actionPressed, fontWeight: '900', backgroundColor: colors.overlay, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, overflow: 'hidden' },
   video: { height: 342, borderRadius: 32, backgroundColor: colors.textPrimary, overflow: 'hidden', position: 'relative' },
   videoGradientTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 130, backgroundColor: colors.actionPressed },
   videoBadge: { position: 'absolute', top: 18, left: 18, backgroundColor: colors.action, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },

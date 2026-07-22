@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Header, Stat, colors } from '../components/Primitives';
 import { MiniRouteMap } from '../components/TravelVisuals';
+import { MAPBOX_TOKEN } from '../config';
 import { formatDuration, formatEstimateTotal, formatScheduledStart } from '../format';
+import { useRoutePolyline } from '../hooks/useRoutePolyline';
 import { isPreLiveRequest } from '../requestState';
 import { WalkRequest } from '../types';
 import { MarketplaceRequest } from '../api';
@@ -31,6 +33,9 @@ export function ConfirmedScreen({
   const joinLabel = canJoinLive ? 'Join shared live walk' : (confirmed ? 'Waiting for guide to start' : 'Waiting for guide');
   const scheduledStart = remoteRequest?.scheduledStart ?? request.scheduledStart;
   const durationMinutes = remoteRequest?.durationMinutes ?? request.durationMinutes;
+  const origin = remoteRequest?.origin ?? request.origin;
+  const destination = remoteRequest?.destination ?? request.destination;
+  const routePolyline = useRoutePolyline(origin, destination, MAPBOX_TOKEN);
   return (
     <View>
       <Header kicker={confirmed ? 'Confirmed' : 'Pending'} title={confirmed ? 'Your live walk is booked.' : 'Your request is waiting for a guide.'} />
@@ -42,7 +47,7 @@ export function ConfirmedScreen({
         <Text style={styles.heroBody}>{formatScheduledStart(scheduledStart)} • {formatDuration(durationMinutes)} • {request.language}</Text>
         {remoteRequest?.id ? <Text style={styles.bookingId}>Booking {remoteRequest.id}</Text> : null}
       </Card>
-      <MiniRouteMap compact />
+      <MiniRouteMap origin={origin} destination={destination} mapboxToken={MAPBOX_TOKEN} routePolyline={routePolyline} compact />
       <Card style={styles.detailCard}>
         <Text style={styles.sectionTitle}>Booking detail</Text>
         <Text style={styles.route}>{remoteRequest?.origin.label ?? request.origin.label}</Text>

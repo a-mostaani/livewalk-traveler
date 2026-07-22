@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BrandMark, MiniRouteMap } from '../components/TravelVisuals';
+import { BrandMark } from '../components/TravelVisuals';
 import { Button, Card, Header, colors } from '../components/Primitives';
 import { getFirstWalkCta, type WalkHistoryState } from '../flow';
 
@@ -21,7 +21,6 @@ export function OnboardingScreen({
         title="Book a local guide to be your eyes on the street."
         body="Choose a route, match with a nearby guide, then join a live video walk with voice, translation, GPS progress, and real-time detours."
       />
-      <MiniRouteMap />
       <View style={styles.cards}>
         {[
           ['videocam', 'Video-first', 'See the place live, not a stale recording.'],

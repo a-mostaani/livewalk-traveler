@@ -6,6 +6,7 @@ import { LiveGuideMap, LiveProgressRail } from '../components/TravelVisuals';
 import { TravelerVideoView } from '../components/TravelerVideoView';
 import { MAPBOX_TOKEN } from '../config';
 import { LiveSession, MarketplaceRequest, SessionMessage } from '../api';
+import { useRoutePolyline } from '../hooks/useRoutePolyline';
 import type { SessionLocation } from '../types';
 import { useTravelerSubscribe } from '../session/useTravelerSubscribe';
 
@@ -31,6 +32,7 @@ export function LiveWalkScreen({
     ? actionNote
     : 'Controls unlock after the guide starts the shared live session.';
   const guideLocation = liveSession?.location ?? remoteRequest?.location ?? null;
+  const routePolyline = useRoutePolyline(remoteRequest?.origin, remoteRequest?.destination, MAPBOX_TOKEN);
   const guideCoordinates = readCoordinates(guideLocation);
   const progressState = deriveProgress(guideLocation, remoteRequest);
   const accuracyLabel = formatAccuracy(guideLocation?.accuracy);
@@ -127,7 +129,7 @@ export function LiveWalkScreen({
           </View>
           <Ionicons name="navigate-circle" size={28} color={colors.action} />
         </View>
-        <LiveGuideMap location={guideLocation} request={remoteRequest} mapboxToken={MAPBOX_TOKEN} />
+        <LiveGuideMap location={guideLocation} request={remoteRequest} mapboxToken={MAPBOX_TOKEN} routePolyline={routePolyline} />
         <View style={styles.gpsMetaGrid}>
           <Metric label="Guide coordinates" value={coordinatesLabel} />
           <Metric label="Accuracy" value={accuracyLabel} />

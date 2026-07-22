@@ -2,7 +2,9 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Header, Pill, Stat, colors } from '../components/Primitives';
 import { MiniRouteMap } from '../components/TravelVisuals';
+import { MAPBOX_TOKEN } from '../config';
 import { formatDuration } from '../format';
+import { useRoutePolyline } from '../hooks/useRoutePolyline';
 import { Estimate, WalkRequest } from '../types';
 
 export function ReviewScreen({
@@ -24,10 +26,12 @@ export function ReviewScreen({
   estimateBusy?: boolean;
   estimateError?: string;
 }) {
+  const routePolyline = useRoutePolyline(request.origin, request.destination, MAPBOX_TOKEN);
+
   return (
     <View>
       <Header kicker="Route review" title="Check the walk before guides see it." />
-      <MiniRouteMap />
+      <MiniRouteMap origin={request.origin} destination={request.destination} mapboxToken={MAPBOX_TOKEN} routePolyline={routePolyline} />
       <Card style={styles.card}>
         <Text style={styles.route}>{request.origin.label}</Text>
         <Text style={styles.arrow}>↓</Text>

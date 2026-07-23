@@ -119,6 +119,8 @@ export function MiniRouteMap({ origin: originPoint, destination: destinationPoin
   const origin = coordinate(originPoint);
   const destination = coordinate(destinationPoint);
   const imageUrl = buildRouteMapImageUrl({ origin, destination, routePolyline, mapboxToken });
+  const [imageFailed, setImageFailed] = React.useState(false);
+  React.useEffect(() => setImageFailed(false), [imageUrl]);
 
   if (!origin || !destination) {
     return (
@@ -140,9 +142,19 @@ export function MiniRouteMap({ origin: originPoint, destination: destinationPoin
     );
   }
 
+  if (imageFailed) {
+    return (
+      <View style={[styles.map, compact && styles.mapCompact, styles.liveMapWaiting]}>
+        <Ionicons name="map-outline" size={30} color={colors.action} />
+        <Text style={styles.liveMapTitle}>Map preview unavailable</Text>
+        <Text style={styles.liveMapText}>The Mapbox token could not load a map image. It may be missing the Static Images (styles:tiles) scope.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.map, compact && styles.mapCompact]}>
-      <Image source={{ uri: imageUrl }} style={styles.mapImage} resizeMode="cover" />
+      <Image source={{ uri: imageUrl }} style={styles.mapImage} resizeMode="cover" onError={() => setImageFailed(true)} />
       <Text style={styles.mapLabel}>{routePolyline ? 'Planned walking route' : 'Route preview'}</Text>
     </View>
   );
@@ -153,6 +165,8 @@ export function LiveGuideMap({ location, request, mapboxToken, routePolyline }: 
   const origin = coordinate(request?.origin);
   const destination = coordinate(request?.destination);
   const imageUrl = buildRouteMapImageUrl({ origin, destination, guide, routePolyline, mapboxToken });
+  const [imageFailed, setImageFailed] = React.useState(false);
+  React.useEffect(() => setImageFailed(false), [imageUrl]);
 
   if (!guide) {
     return (
@@ -174,9 +188,19 @@ export function LiveGuideMap({ location, request, mapboxToken, routePolyline }: 
     );
   }
 
+  if (imageFailed) {
+    return (
+      <View style={[styles.liveMap, styles.liveMapWaiting]}>
+        <Ionicons name="map-outline" size={34} color={colors.action} />
+        <Text style={styles.liveMapTitle}>Map preview unavailable</Text>
+        <Text style={styles.liveMapText}>The Mapbox token could not load a map image. It may be missing the Static Images (styles:tiles) scope.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.liveMap}>
-      <Image source={{ uri: imageUrl }} style={styles.mapImage} resizeMode="cover" />
+      <Image source={{ uri: imageUrl }} style={styles.mapImage} resizeMode="cover" onError={() => setImageFailed(true)} />
       <View style={styles.mapOverlay}>
         <View style={styles.liveDot} />
         <Text style={styles.mapOverlayText}>Guide GPS live</Text>

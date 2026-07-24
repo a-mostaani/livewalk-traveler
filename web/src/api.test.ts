@@ -65,3 +65,43 @@ test('API adapter reads the authenticated session status feed without media acti
   expect(new Headers(init?.headers).get('authorization')).toBe('Bearer session-token');
   expect(init?.method).toBeUndefined();
 });
+
+test('API adapter sends authenticated session messages with the server-owned sender identity', async () => {
+  const fetcher = vi.fn(async () => new Response(JSON.stringify({
+    ok: true,
+    message: {
+      id: 'msg_1',
+      sessionId: 'sess_1',
+      senderRole: 'traveler',
+      senderName: 'Ava',
+      text: 'Please slow down.',
+      createdAt: '2026-07-24T10:00:00Z',
+    },
+  }), { status: 201, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+  const client = new LiveWalkApi('https://api.example.test', fetcher);
+
+  await client.sendSessionMessage('session-token', 'sess_1', 'Please slow down.');
+
+  const [url, init] = vi.mocked(fetcher).mock.calls[0];
+  expect(url).toBe('https://api.example.test/api/sessions/sess_1/messages');
+  expect(init?.method).toBe('POST');
+  expect(new Headers(init?.headers).get('authorization')).toBe('Bearer session-token');
+  expect(JSON.parse(String(init?.body))).toEqual({ text: 'Please slow down.' });
+});
+
+test('API adapter ends a session through the authenticated idempotent endpoint', async () => {
+  const fetcher = vi.fn(async () => new Response(JSON.stringify({
+    ok: true,
+    request: { id: 'req_1', status: 'completed' },
+    session: { id: 'sess_1', status: 'ended' },
+    messages: [],
+  }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+  const client = new LiveWalkApi('https://api.example.test', fetcher);
+
+  await client.endSession('session-token', 'sess_1');
+
+  const [url, init] = vi.mocked(fetcher).mock.calls[0];
+  expect(url).toBe('https://api.example.test/api/sessions/sess_1/end');
+  expect(init?.method).toBe('POST');
+  expect(new Headers(init?.headers).get('authorization')).toBe('Bearer session-token');
+});

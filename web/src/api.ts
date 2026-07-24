@@ -18,6 +18,8 @@ function friendlyError(status: number, raw?: string) {
   if (lower.includes('password must')) return 'Use a password with at least 6 characters.';
   if (status === 401) return 'Your session expired. Sign in again.';
   if (lower.includes('only pending or accepted')) return 'This walk has already started and can no longer be cancelled.';
+  if (lower.includes('not started')) return 'The guide has not started this live walk yet.';
+  if (lower.includes('cancelled')) return 'This walk was cancelled and is no longer available.';
   if (status >= 500) return 'LivelyWalk is having trouble right now. Please try again.';
   return message || `Request failed (${status}).`;
 }
@@ -116,7 +118,20 @@ export class LiveWalkApi {
   getSessionStatus(token: string, id: string) {
     return this.request<{ ok: true; request: WalkRequest; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${encodeURIComponent(id)}/status`, {}, token);
   }
+
+  sendSessionMessage(token: string, id: string, text: string) {
+    return this.request<{ ok: true; message: SessionMessage }>(`/api/sessions/${encodeURIComponent(id)}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }, token);
+  }
+
+  endSession(token: string, id: string) {
+    return this.request<{ ok: true; request: WalkRequest; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${encodeURIComponent(id)}/end`, {
+      method: 'POST',
+    }, token);
+  }
 }
 
 export const liveWalkApi = new LiveWalkApi();
-export type LiveWalkApiSurface = Pick<LiveWalkApi, 'health' | 'register' | 'login' | 'me' | 'logout' | 'estimate' | 'createRequest' | 'listRequests' | 'getRequest' | 'cancelRequest' | 'getSessionStatus'>;
+export type LiveWalkApiSurface = Pick<LiveWalkApi, 'health' | 'register' | 'login' | 'me' | 'logout' | 'estimate' | 'createRequest' | 'listRequests' | 'getRequest' | 'cancelRequest' | 'getSessionStatus' | 'sendSessionMessage' | 'endSession'>;

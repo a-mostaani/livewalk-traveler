@@ -1,5 +1,5 @@
 import { API_BASE_URL } from './config';
-import type { Quote, RequestDraft, Traveler, WalkRequest } from './types';
+import type { LiveSession, Quote, RequestDraft, SessionMessage, Traveler, WalkRequest } from './types';
 import { hasRouteCoordinates } from './requestModel';
 
 export class ApiError extends Error {
@@ -106,13 +106,17 @@ export class LiveWalkApi {
   }
 
   getRequest(token: string, id: string) {
-    return this.request<{ ok: true; request: WalkRequest }>(`/api/requests/${encodeURIComponent(id)}`, {}, token);
+    return this.request<{ ok: true; request: WalkRequest; session: LiveSession | null }>(`/api/requests/${encodeURIComponent(id)}`, {}, token);
   }
 
   cancelRequest(token: string, id: string) {
-    return this.request<{ ok: true; request: WalkRequest }>(`/api/requests/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, token);
+    return this.request<{ ok: true; request: WalkRequest; session: LiveSession | null }>(`/api/requests/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, token);
+  }
+
+  getSessionStatus(token: string, id: string) {
+    return this.request<{ ok: true; request: WalkRequest; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${encodeURIComponent(id)}/status`, {}, token);
   }
 }
 
 export const liveWalkApi = new LiveWalkApi();
-export type LiveWalkApiSurface = Pick<LiveWalkApi, 'health' | 'register' | 'login' | 'me' | 'logout' | 'estimate' | 'createRequest' | 'listRequests' | 'getRequest' | 'cancelRequest'>;
+export type LiveWalkApiSurface = Pick<LiveWalkApi, 'health' | 'register' | 'login' | 'me' | 'logout' | 'estimate' | 'createRequest' | 'listRequests' | 'getRequest' | 'cancelRequest' | 'getSessionStatus'>;

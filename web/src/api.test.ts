@@ -48,3 +48,20 @@ test('API adapter surfaces unauthorized responses as typed session errors', asyn
 
   await expect(client.listRequests('expired')).rejects.toEqual(expect.objectContaining({ name: 'ApiError', status: 401, message: 'Your session expired. Sign in again.' }));
 });
+
+test('API adapter reads the authenticated session status feed without media actions', async () => {
+  const fetcher = vi.fn(async () => new Response(JSON.stringify({
+    ok: true,
+    request: { id: 'req_1' },
+    session: { id: 'sess_1', status: 'live' },
+    messages: [],
+  }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+  const client = new LiveWalkApi('https://api.example.test', fetcher);
+
+  await client.getSessionStatus('session-token', 'sess_1');
+
+  const [url, init] = vi.mocked(fetcher).mock.calls[0];
+  expect(url).toBe('https://api.example.test/api/sessions/sess_1/status');
+  expect(new Headers(init?.headers).get('authorization')).toBe('Bearer session-token');
+  expect(init?.method).toBeUndefined();
+});

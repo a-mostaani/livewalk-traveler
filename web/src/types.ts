@@ -38,6 +38,33 @@ export type Quote = {
 
 export type RequestStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'live' | 'completed';
 
+export type SessionStatus = 'ready' | 'live' | 'ended' | 'cancelled';
+
+export type SessionLocation = Place & {
+  progress: number;
+  updatedAt: string;
+};
+
+export type SessionMessage = {
+  id: string;
+  sessionId: string;
+  senderRole: 'traveler' | 'guide' | 'system';
+  senderName: string;
+  text: string;
+  createdAt: string;
+};
+
+export type LiveSession = {
+  id: string;
+  requestId: string;
+  status: SessionStatus;
+  startedAt: string | null;
+  endedAt?: string | null;
+  location: SessionLocation | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type WalkRequest = {
   id: string;
   travelerName: string;
@@ -54,4 +81,11 @@ export type WalkRequest = {
   sessionId: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type BookingSnapshot = {
+  request: WalkRequest;
+  session: LiveSession | null;
+  messages: SessionMessage[];
+  syncedAt: string;
 };

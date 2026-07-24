@@ -27,6 +27,7 @@ export function PlaceSearch({
   const listId = useId();
   const fieldRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const optionInteractionRef = useRef(false);
   const [query, setQuery] = useState(value.label);
   const [results, setResults] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,6 +68,7 @@ export function PlaceSearch({
   }, [active, query, search, selected]);
 
   const choose = (place: Place) => {
+    optionInteractionRef.current = false;
     setQuery(place.label);
     setResults([]);
     setError('');
@@ -103,6 +105,7 @@ export function PlaceSearch({
       ref={fieldRef}
       className={`place-field${active ? ' active' : ''}${pickerOpen ? ' picker-open' : ''}`}
       onBlur={(event) => {
+        if (optionInteractionRef.current) return;
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onDeactivate?.();
       }}
     >
@@ -150,7 +153,24 @@ export function PlaceSearch({
       {error ? <p className="field-error" role="alert">{error}</p> : null}
       {!loading && !error && query.trim().length >= 3 && !selected && results.length === 0 ? <p className="field-help">Keep typing or try a nearby landmark.</p> : null}
       {pickerOpen ? (
-        <div id={listId} className="place-results" role="listbox" aria-label={`${label} results`}>
+        <div
+          id={listId}
+          className="place-results"
+          role="listbox"
+          aria-label={`${label} results`}
+          onPointerDownCapture={() => {
+            optionInteractionRef.current = true;
+          }}
+          onPointerCancelCapture={() => {
+            optionInteractionRef.current = false;
+          }}
+          onTouchStartCapture={() => {
+            optionInteractionRef.current = true;
+          }}
+          onTouchCancelCapture={() => {
+            optionInteractionRef.current = false;
+          }}
+        >
           {results.map((place) => (
             <button key={`${place.label}-${place.lat}-${place.lng}`} type="button" role="option" onClick={() => choose(place)}>
               <span className="result-pin">⌖</span>

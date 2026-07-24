@@ -50,6 +50,39 @@ function RoutePicker({ search }: { search: (query: string, signal?: AbortSignal)
   );
 }
 
+function TouchPicker({
+  label,
+  search,
+  onChange,
+  onDeactivate,
+}: {
+  label: string;
+  search: (query: string, signal?: AbortSignal) => Promise<Place[]>;
+  onChange: (place: PlaceDraft) => void;
+  onDeactivate: () => void;
+}) {
+  const [value, setValue] = useState<PlaceDraft>({ label: 'Museo' });
+  const [active, setActive] = useState(true);
+  return (
+    <PlaceSearch
+      label={label}
+      placeholder="Search"
+      value={value}
+      active={active}
+      onActivate={() => setActive(true)}
+      onDeactivate={() => {
+        setActive(false);
+        onDeactivate();
+      }}
+      onChange={(place) => {
+        setValue(place);
+        onChange(place);
+      }}
+      search={search}
+    />
+  );
+}
+
 test('renders a selected place as stable truncated text with protected status and a change action', () => {
   render(<Picker initial={longPlace} />);
 
@@ -79,6 +112,78 @@ test('moves search results into selected coordinate state', async () => {
 
   expect(screen.getByTitle(longPlace.label)).toBeInTheDocument();
   expect(screen.getByTestId('place-value')).toHaveTextContent(JSON.stringify(longPlace));
+  vi.useRealTimers();
+});
+
+test('keeps a touch-started option alive through Safari blur ordering and selects it once', async () => {
+  vi.useFakeTimers();
+  const search = vi.fn(async () => [longPlace]);
+  const onChange = vi.fn();
+  const onDeactivate = vi.fn();
+  const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
+  render(
+    <form onSubmit={onSubmit}>
+      <TouchPicker
+        label="Starting point"
+        onChange={onChange}
+        onDeactivate={onDeactivate}
+        search={search}
+      />
+    </form>,
+  );
+
+  const input = screen.getByRole('textbox', { name: 'Starting point' });
+  fireEvent.focus(input);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(400);
+  });
+
+  const option = screen.getByRole('option', { name: /Museo Nacional/ });
+  fireEvent.pointerDown(option, { pointerId: 1, pointerType: 'touch', isPrimary: true });
+  fireEvent.blur(input, { relatedTarget: null });
+
+  expect(screen.getByRole('listbox', { name: 'Starting point results' })).toBeInTheDocument();
+  expect(onDeactivate).not.toHaveBeenCalled();
+
+  fireEvent.pointerUp(option, { pointerId: 1, pointerType: 'touch', isPrimary: true });
+  fireEvent.click(option);
+
+  expect(onChange).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenCalledWith(longPlace);
+  expect(onDeactivate).toHaveBeenCalledTimes(1);
+  expect(onSubmit).not.toHaveBeenCalled();
+  vi.useRealTimers();
+});
+
+test('keeps a touch-only option alive through null-related-target blur', async () => {
+  vi.useFakeTimers();
+  const search = vi.fn(async () => [longPlace]);
+  const onChange = vi.fn();
+  const onDeactivate = vi.fn();
+  render(
+    <TouchPicker
+      label="Destination"
+      onChange={onChange}
+      onDeactivate={onDeactivate}
+      search={search}
+    />,
+  );
+
+  const input = screen.getByRole('textbox', { name: 'Destination' });
+  fireEvent.focus(input);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(400);
+  });
+
+  const option = screen.getByRole('option', { name: /Museo Nacional/ });
+  fireEvent.touchStart(option, { touches: [{ identifier: 1 }] });
+  fireEvent.blur(input, { relatedTarget: null });
+  fireEvent.touchEnd(option, { changedTouches: [{ identifier: 1 }] });
+  fireEvent.click(option);
+
+  expect(onChange).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenCalledWith(longPlace);
+  expect(onDeactivate).toHaveBeenCalledTimes(1);
   vi.useRealTimers();
 });
 
@@ -112,5 +217,6 @@ test('keeps the active mobile picker in flow with separation and selected text i
   expect(styles).toContain('.place-field.active { z-index: 30; }');
   expect(styles).toContain('.place-field.picker-open { margin-bottom: 28px; }');
   expect(styles).toContain('.place-results { position: static; width: 100%; max-height: min(220px, 30dvh); margin: 8px 0 0; overflow-y: auto; overscroll-behavior: contain; }');
+  expect(styles).toContain('.place-results button { width: 100%; min-height: 50px;');
   expect(styles).toContain('.selected-place { min-width: 0; flex: 1; overflow: hidden; color: var(--white); text-overflow: ellipsis; white-space: nowrap; }');
 });

@@ -151,6 +151,34 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .quote-card p { margin: 0; color: var(--cyan); font-size: 9px; font-weight: 750; }
 .submit-request { margin-top: 12px; }
 .submit-note { margin: 8px 0 0; color: #687e9b; text-align: center; font-size: 9px; }
+.request-review { display: grid; gap: 16px; }
+.review-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.review-heading h3 { margin: 6px 0 0; font-size: 22px; letter-spacing: -.035em; }
+.endpoint-map { position: relative; min-height: 220px; margin: 0; overflow: hidden; border: 1px solid rgba(33,212,253,.22); border-radius: 16px; background: #071426; }
+.endpoint-map img { width: 100%; height: 220px; display: block; object-fit: cover; }
+.endpoint-map-fallback { height: 220px; display: flex; align-items: center; justify-content: space-around; background-color: #0a1930; background-image: linear-gradient(rgba(33,212,253,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(33,212,253,.07) 1px, transparent 1px); background-size: 32px 32px; }
+.endpoint-map-fallback span { width: 32px; height: 32px; display: grid; place-items: center; border: 3px solid #061326; border-radius: 50% 50% 50% 0; color: #061326; background: var(--cyan); font-size: 11px; font-weight: 900; transform: rotate(-45deg); }
+.endpoint-map-fallback span:last-child { background: var(--violet-2); }
+.endpoint-map-fallback span::first-letter { transform: rotate(45deg); }
+.endpoint-map figcaption { position: absolute; right: 10px; bottom: 10px; left: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; border: 1px solid rgba(145,176,216,.2); border-radius: 10px; background: rgba(5,14,28,.88); backdrop-filter: blur(8px); }
+.endpoint-map figcaption span { color: var(--cyan); font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.endpoint-map figcaption small { color: #8da3bd; font-size: 8px; }
+.review-route { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.review-route div, .review-facts div { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(6,17,33,.45); }
+.review-route span, .review-facts dt { display: block; margin-bottom: 5px; color: #7086a2; font-size: 8px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.review-route strong { display: block; overflow: hidden; color: #dce9f8; text-overflow: ellipsis; font-size: 10px; white-space: nowrap; }
+.review-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
+.review-facts dd { margin: 0; color: #c6d6e8; font-size: 10px; line-height: 1.45; }
+.review-quote { padding: 16px; border: 1px solid rgba(33,212,253,.22); border-radius: 15px; background: linear-gradient(135deg, rgba(33,212,253,.09), rgba(115,87,255,.08)); }
+.review-quote > div { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.review-quote > div span { color: var(--cyan); font-size: 9px; font-weight: 850; letter-spacing: .09em; }
+.review-quote > div strong { font-size: 29px; letter-spacing: -.04em; }
+.review-quote dl { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 14px 0; }
+.review-quote dl div { display: flex; justify-content: space-between; gap: 8px; }
+.review-quote dt { color: #7186a2; font-size: 9px; }
+.review-quote dd { margin: 0; color: #c6d7e9; font-size: 9px; font-weight: 800; }
+.review-quote p { margin: 0; color: var(--success); font-size: 9px; font-weight: 750; }
+.review-actions { display: grid; grid-template-columns: .8fr 1.4fr; gap: 9px; }
 .walks-column { padding: 26px; }
 .walks-heading { align-items: center; margin-bottom: 19px; }
 .refresh-button { min-height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; }
@@ -306,4 +334,6 @@ footer p { margin: 7px 0 0; }
   .history-heading { align-items: start; flex-direction: column; }
   .request-card-actions { flex-direction: column !important; }
   .quote-card > div:first-child { align-items: start; flex-direction: column; }
+  .review-route, .review-facts, .review-quote dl, .review-actions { grid-template-columns: 1fr; }
+  .endpoint-map figcaption { align-items: flex-start; flex-direction: column; }
 }

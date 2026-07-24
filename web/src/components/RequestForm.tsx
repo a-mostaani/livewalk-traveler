@@ -1,10 +1,11 @@
-import { type FormEvent, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { LiveWalkApiSurface } from '../api';
 import { ApiError, liveWalkApi } from '../api';
 import { useAuth } from '../auth';
 import { canSubmitQuotedRequest, hasRouteCoordinates, requestFingerprint } from '../requestModel';
 import type { Quote, RequestDraft, WalkRequest } from '../types';
 import { PlaceSearch } from './PlaceSearch';
+import { RequestReview } from './RequestReview';
 
 const languages = ['English', 'Spanish', 'French', 'Arabic', 'Japanese'];
 const interests = ['Local stories', 'Food stops', 'Hidden corners', 'Architecture', 'Photo moments'];
@@ -41,6 +42,7 @@ export function RequestForm({
   const [quoteFingerprint, setQuoteFingerprint] = useState('');
   const [quoteBusy, setQuoteBusy] = useState(false);
   const [submitBusy, setSubmitBusy] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const [error, setError] = useState('');
   const routeReady = hasRouteCoordinates(draft);
   const quoteCurrent = quoteFingerprint === requestFingerprint(draft) && Boolean(quote);
@@ -50,6 +52,7 @@ export function RequestForm({
 
   const changeDraft = (next: RequestDraft) => {
     setDraft(next);
+    setReviewing(false);
     setError('');
   };
 
@@ -83,8 +86,7 @@ export function RequestForm({
     }
   };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
+  const submit = async () => {
     if (!submitReady) {
       setError('Get a current server quote before submitting.');
       return;
@@ -96,6 +98,7 @@ export function RequestForm({
       onCreated(data.request);
       setQuote(undefined);
       setQuoteFingerprint('');
+      setReviewing(false);
     } catch (reason) {
       handleUnauthorized(reason);
       setError(reason instanceof Error ? reason.message : 'Could not submit your request.');
@@ -116,7 +119,23 @@ export function RequestForm({
         <div className="step-chip">01 · ROUTE</div>
       </div>
       <p className="panel-intro">Choose two real places. Your quote and booking are calculated by the shared LivelyWalk backend.</p>
-      <form onSubmit={submit}>
+      {reviewing && quoteCurrent && quote ? (
+        <RequestReview
+          draft={draft}
+          quote={quote}
+          busy={submitBusy}
+          onEdit={() => setReviewing(false)}
+          onConfirm={() => void submit()}
+        />
+      ) : (
+      <form onSubmit={(event) => {
+        event.preventDefault();
+        if (!submitReady) {
+          setError('Get a current server quote before reviewing your request.');
+          return;
+        }
+        setReviewing(true);
+      }}>
         <div className="route-stack">
           <PlaceSearch label="Starting point" placeholder="Search a place or landmark" value={draft.origin} onChange={(origin) => changeDraft({ ...draft, origin })} />
           <div className="route-line" aria-hidden="true" />
@@ -163,10 +182,11 @@ export function RequestForm({
           ) : null}
         </div>
         <button className="button button-primary button-wide submit-request" disabled={!submitReady} type="submit">
-          {submitBusy ? <span className="spinner" /> : null}{submitBusy ? 'Sending request…' : 'Request a guide'}
+          Review this request
         </button>
         {!quoteCurrent ? <p className="submit-note">A current server quote is required before submission.</p> : null}
       </form>
+      )}
     </section>
   );
 }

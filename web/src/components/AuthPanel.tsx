@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { useAuth } from '../auth';
+import { AndroidDownload } from './AndroidDownload';
 
 export function AuthPanel() {
   const auth = useAuth();
@@ -67,6 +68,9 @@ export function AuthPanel() {
           <p className="security-note"><span>◆</span> Your session stays in this browser tab and clears when you sign out.</p>
         </section>
       </main>
+      <div className="auth-download-wrap">
+        <AndroidDownload />
+      </div>
     </div>
   );
 }

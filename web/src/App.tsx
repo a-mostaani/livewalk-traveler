@@ -3,6 +3,7 @@ import { ApiError, liveWalkApi } from './api';
 import { useAuth } from './auth';
 import { AuthPanel } from './components/AuthPanel';
 import { ActiveBookingPanel, type CancellationState } from './components/ActiveBookingPanel';
+import { AndroidDownload } from './components/AndroidDownload';
 import { RequestCard } from './components/RequestCard';
 import { RequestForm } from './components/RequestForm';
 import type { SessionActionState } from './components/SessionPanel';
@@ -346,6 +347,7 @@ function TravelerDashboard() {
             </div>
           </section>
         </div>
+        <AndroidDownload />
       </main>
       <footer><span>EXPERIENCE EVERYWHERE LIVE</span><p>Traveler v1 · Quotes and booking state are live · Payments, voice and video are outside this release.</p></footer>
     </div>

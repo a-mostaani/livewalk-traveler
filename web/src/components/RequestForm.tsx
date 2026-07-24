@@ -44,6 +44,7 @@ export function RequestForm({
   const [submitBusy, setSubmitBusy] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [error, setError] = useState('');
+  const [activePlaceField, setActivePlaceField] = useState<'origin' | 'destination' | null>(null);
   const routeReady = hasRouteCoordinates(draft);
   const quoteCurrent = quoteFingerprint === requestFingerprint(draft) && Boolean(quote);
   const submitReady = canSubmitQuotedRequest(draft, quoteFingerprint, quoteBusy || submitBusy) && Boolean(quote);
@@ -137,9 +138,25 @@ export function RequestForm({
         setReviewing(true);
       }}>
         <div className="route-stack">
-          <PlaceSearch label="Starting point" placeholder="Search a place or landmark" value={draft.origin} onChange={(origin) => changeDraft({ ...draft, origin })} />
+          <PlaceSearch
+            label="Starting point"
+            placeholder="Search a place or landmark"
+            value={draft.origin}
+            active={activePlaceField === 'origin'}
+            onActivate={() => setActivePlaceField('origin')}
+            onDeactivate={() => setActivePlaceField((current) => current === 'origin' ? null : current)}
+            onChange={(origin) => changeDraft({ ...draft, origin })}
+          />
           <div className="route-line" aria-hidden="true" />
-          <PlaceSearch label="Destination" placeholder="Where should the guide finish?" value={draft.destination} onChange={(destination) => changeDraft({ ...draft, destination })} />
+          <PlaceSearch
+            label="Destination"
+            placeholder="Where should the guide finish?"
+            value={draft.destination}
+            active={activePlaceField === 'destination'}
+            onActivate={() => setActivePlaceField('destination')}
+            onDeactivate={() => setActivePlaceField((current) => current === 'destination' ? null : current)}
+            onChange={(destination) => changeDraft({ ...draft, destination })}
+          />
         </div>
         <div className="form-grid">
           <label>

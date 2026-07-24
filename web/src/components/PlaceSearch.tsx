@@ -8,17 +8,24 @@ export function PlaceSearch({
   placeholder,
   value,
   onChange,
+  active = true,
+  onActivate,
+  onDeactivate,
   search = searchPlaces,
 }: {
   label: string;
   placeholder: string;
   value: PlaceDraft;
   onChange: (next: PlaceDraft) => void;
+  active?: boolean;
+  onActivate?: () => void;
+  onDeactivate?: () => void;
   search?: (query: string, signal?: AbortSignal) => Promise<Place[]>;
 }) {
   const inputId = useId();
   const labelId = useId();
   const listId = useId();
+  const fieldRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState(value.label);
   const [results, setResults] = useState<Place[]>([]);
@@ -32,7 +39,7 @@ export function PlaceSearch({
 
   useEffect(() => {
     const trimmed = query.trim();
-    if (selected || trimmed.length < 3) {
+    if (!active || selected || trimmed.length < 3) {
       setResults([]);
       setLoading(false);
       setError('');
@@ -57,13 +64,14 @@ export function PlaceSearch({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, search, selected]);
+  }, [active, query, search, selected]);
 
   const choose = (place: Place) => {
     setQuery(place.label);
     setResults([]);
     setError('');
     onChange(retainSelectedCoordinates(place));
+    onDeactivate?.();
   };
 
   const keepPickerVisible = () => {
@@ -76,6 +84,7 @@ export function PlaceSearch({
 
   const changeSelection = () => {
     onChange(updatePlaceQuery(value.label));
+    onActivate?.();
     window.requestAnimationFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
@@ -84,11 +93,19 @@ export function PlaceSearch({
   };
 
   useEffect(() => {
-    if (results.length && inputRef.current === document.activeElement) keepPickerVisible();
-  }, [results.length]);
+    if (active && results.length && inputRef.current === document.activeElement) keepPickerVisible();
+  }, [active, results.length]);
+
+  const pickerOpen = active && results.length > 0;
 
   return (
-    <div className="place-field">
+    <div
+      ref={fieldRef}
+      className={`place-field${active ? ' active' : ''}${pickerOpen ? ' picker-open' : ''}`}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onDeactivate?.();
+      }}
+    >
       <label id={labelId} htmlFor={selected ? undefined : inputId}>{label}</label>
       {selected ? (
         <div className="input-shell selected" aria-labelledby={labelId}>
@@ -103,14 +120,18 @@ export function PlaceSearch({
             ref={inputRef}
             id={inputId}
             aria-autocomplete="list"
-            aria-controls={results.length ? listId : undefined}
-            aria-expanded={results.length > 0}
+            aria-controls={pickerOpen ? listId : undefined}
+            aria-expanded={pickerOpen}
             autoComplete="off"
             placeholder={placeholder}
             value={query}
-            onFocus={keepPickerVisible}
+            onFocus={() => {
+              onActivate?.();
+              keepPickerVisible();
+            }}
             onChange={(event) => {
               const next = event.target.value;
+              onActivate?.();
               setQuery(next);
               setResults([]);
               setError('');
@@ -128,7 +149,7 @@ export function PlaceSearch({
       ) : <p className="field-help">Choose a search result to lock the route point.</p>}
       {error ? <p className="field-error" role="alert">{error}</p> : null}
       {!loading && !error && query.trim().length >= 3 && !selected && results.length === 0 ? <p className="field-help">Keep typing or try a nearby landmark.</p> : null}
-      {results.length ? (
+      {pickerOpen ? (
         <div id={listId} className="place-results" role="listbox" aria-label={`${label} results`}>
           {results.map((place) => (
             <button key={`${place.label}-${place.lat}-${place.lng}`} type="button" role="option" onClick={() => choose(place)}>

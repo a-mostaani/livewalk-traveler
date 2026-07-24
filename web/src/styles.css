@@ -125,9 +125,10 @@ input::placeholder { color: #647a98; }
 .panel-heading, .walks-heading { display: flex; justify-content: space-between; align-items: start; gap: 18px; }
 .step-chip { padding: 7px 10px; border: 1px solid rgba(33,212,253,.2); border-radius: 999px; color: var(--cyan); background: rgba(33,212,253,.08); font-size: 9px; font-weight: 850; letter-spacing: .08em; white-space: nowrap; }
 .panel-intro { margin: 4px 0 24px; }
-.route-stack { position: relative; }
+.route-stack { position: relative; isolation: isolate; }
 .route-line { position: absolute; top: 53px; bottom: 62px; left: 18px; width: 1px; z-index: 0; background: linear-gradient(var(--cyan), var(--violet)); opacity: .45; }
 .place-field { position: relative; z-index: 1; margin-bottom: 18px; }
+.place-field.active { z-index: 30; }
 .input-shell { min-height: 52px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(145,176,216,.28); border-radius: 13px; background: #09172d; }
 .input-shell:focus-within { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(33,212,253,.1); }
 .input-shell.selected { border-color: rgba(62,230,174,.45); }
@@ -365,7 +366,8 @@ footer p { margin: 7px 0 0; }
   .form-grid { grid-template-columns: 1fr; }
   .form-grid label:last-child { grid-column: auto; }
   .place-field { scroll-margin-top: 88px; }
-  .place-results { position: static; max-height: min(220px, 30dvh); overflow-y: auto; overscroll-behavior: contain; }
+  .place-field.picker-open { margin-bottom: 28px; }
+  .place-results { position: static; width: 100%; max-height: min(220px, 30dvh); margin: 8px 0 0; overflow-y: auto; overscroll-behavior: contain; }
   .request-meta { grid-template-columns: 1fr 1fr; }
   .active-booking { padding: 16px; }
   .active-booking-head { align-items: flex-start; flex-direction: column-reverse; }

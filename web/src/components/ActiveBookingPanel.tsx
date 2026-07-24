@@ -1,6 +1,8 @@
 import { latestGuideUpdate, locationFreshness, presentLifecycle, type ConnectionStatus } from '../bookingModel';
 import { cancellableStatuses } from '../requestModel';
 import type { BookingSnapshot, WalkRequest } from '../types';
+import { CompletionSummary } from './CompletionSummary';
+import { SessionPanel, type SessionActionState } from './SessionPanel';
 
 const rail = ['Plan', 'Match', 'Ready', 'Live', 'Complete'];
 
@@ -16,18 +18,26 @@ export function ActiveBookingPanel({
   lastSuccessfulAt,
   refreshing,
   cancellation,
+  messageState,
+  endState,
   now = Date.now(),
   onRefresh,
   onCancel,
+  onSendMessage,
+  onEnd,
 }: {
   snapshot: BookingSnapshot;
   connection: ConnectionStatus;
   lastSuccessfulAt?: Date;
   refreshing: boolean;
   cancellation: CancellationState;
+  messageState: SessionActionState;
+  endState: SessionActionState;
   now?: number;
   onRefresh: () => void;
   onCancel: (request: WalkRequest) => void;
+  onSendMessage: (sessionId: string, text: string) => Promise<boolean>;
+  onEnd: (sessionId: string) => void;
 }) {
   const lifecycle = presentLifecycle(snapshot.request, snapshot.session);
   const freshness = locationFreshness(snapshot.session?.location ?? null, now);
@@ -37,6 +47,7 @@ export function ActiveBookingPanel({
   const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: snapshot.request.estimate.currency, maximumFractionDigits: 0 }).format(snapshot.request.estimate.total);
   const location = snapshot.session?.location;
   const cancellationForBooking = cancellation.requestId === snapshot.request.id ? cancellation : { requestId: '', status: 'idle' as const, message: '' };
+  const endForSession = endState.sessionId === snapshot.session?.id ? endState : { sessionId: '', status: 'idle' as const, message: '' };
 
   return (
     <article className={`active-booking status-${lifecycle.tone}`} aria-labelledby="active-booking-heading">
@@ -113,12 +124,30 @@ export function ActiveBookingPanel({
         </section>
       </div>
 
+      <CompletionSummary snapshot={snapshot} />
+      <SessionPanel snapshot={snapshot} messageState={messageState} onSendMessage={onSendMessage} />
+
       <div className="active-booking-actions">
         <div className={`cancellation-state ${cancellationForBooking.status}`} aria-live="polite">
           {cancellationForBooking.status === 'pending' ? <><span className="spinner" /><strong>Cancelling request…</strong></> : null}
           {cancellationForBooking.status === 'success' ? <><span>✓</span><strong>{cancellationForBooking.message}</strong></> : null}
           {cancellationForBooking.status === 'error' ? <><span>!</span><strong>{cancellationForBooking.message}</strong></> : null}
         </div>
+        <div className={`end-state ${endForSession.status}`} aria-live="polite">
+          {endForSession.status === 'pending' ? <><span className="spinner" /><strong>Ending walk…</strong></> : null}
+          {endForSession.status === 'success' ? <><span>✓</span><strong>{endForSession.message}</strong></> : null}
+          {endForSession.status === 'error' ? <><span>!</span><strong>{endForSession.message}</strong></> : null}
+        </div>
+        {lifecycle.live && snapshot.session ? (
+          <button
+            className="button button-danger-ghost"
+            disabled={endForSession.status === 'pending'}
+            type="button"
+            onClick={() => onEnd(snapshot.session!.id)}
+          >
+            {endForSession.status === 'pending' ? 'End pending' : endForSession.status === 'error' ? 'Retry end walk' : 'End walk'}
+          </button>
+        ) : null}
         {canCancel && cancellationForBooking.status !== 'success' ? (
           <button className="button button-danger-ghost" disabled={cancellationForBooking.status === 'pending'} type="button" onClick={() => onCancel(snapshot.request)}>
             {cancellationForBooking.status === 'pending' ? 'Cancellation pending' : cancellationForBooking.status === 'error' ? 'Retry cancellation' : 'Cancel before start'}

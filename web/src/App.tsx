@@ -5,6 +5,7 @@ import { AuthPanel } from './components/AuthPanel';
 import { ActiveBookingPanel, type CancellationState } from './components/ActiveBookingPanel';
 import { RequestCard } from './components/RequestCard';
 import { RequestForm } from './components/RequestForm';
+import type { SessionActionState } from './components/SessionPanel';
 import { connectionAfterFailure, connectionAfterSuccess, mergeRequest, mergeRequestList, mergeSnapshot, pickResumableRequest, type ConnectionStatus } from './bookingModel';
 import type { BookingSnapshot, WalkRequest } from './types';
 
@@ -31,10 +32,14 @@ function TravelerDashboard() {
   const [error, setError] = useState('');
   const [lastSynced, setLastSynced] = useState<Date>();
   const [cancellation, setCancellation] = useState<CancellationState>({ requestId: '', status: 'idle', message: '' });
+  const [messageAction, setMessageAction] = useState<SessionActionState>({ sessionId: '', status: 'idle', message: '' });
+  const [endAction, setEndAction] = useState<SessionActionState>({ sessionId: '', status: 'idle', message: '' });
   const selectedRequestIdRef = useRef('');
   const snapshotRef = useRef<BookingSnapshot | undefined>(undefined);
   const listRefreshInFlight = useRef(false);
   const activeRefreshInFlight = useRef(false);
+  const messageInFlight = useRef('');
+  const endInFlight = useRef('');
 
   useEffect(() => {
     selectedRequestIdRef.current = selectedRequestId;
@@ -143,6 +148,8 @@ function TravelerDashboard() {
       setActiveSnapshot(seeded);
       setConnection('connecting');
       setCancellation({ requestId: '', status: 'idle', message: '' });
+      setMessageAction({ sessionId: '', status: 'idle', message: '' });
+      setEndAction({ sessionId: '', status: 'idle', message: '' });
     }
     void refreshActive();
   }, [refreshActive, selectedRequestId]);
@@ -160,6 +167,17 @@ function TravelerDashboard() {
       window.removeEventListener('focus', resume);
     };
   }, [refreshActive]);
+
+  useEffect(() => {
+    const session = activeSnapshot?.session;
+    if (!session || (activeSnapshot.request.status !== 'completed' && session.status !== 'ended')) return;
+    if (endInFlight.current === session.id) endInFlight.current = '';
+    setEndAction((current) => (
+      current.sessionId === session.id && (current.status === 'pending' || current.status === 'error')
+        ? { sessionId: session.id, status: 'success', message: 'Walk ended and confirmed by LivelyWalk.' }
+        : current
+    ));
+  }, [activeSnapshot]);
 
   const created = (request: WalkRequest) => {
     const snapshot: BookingSnapshot = { request, session: null, messages: [], syncedAt: new Date().toISOString() };
@@ -196,6 +214,79 @@ function TravelerDashboard() {
     }
   };
 
+  const sendMessage = async (sessionId: string, text: string) => {
+    const snapshot = snapshotRef.current;
+    if (
+      messageInFlight.current
+      || !snapshot
+      || snapshot.request.id !== selectedRequestIdRef.current
+      || snapshot.request.status !== 'live'
+      || snapshot.session?.id !== sessionId
+      || snapshot.session.status !== 'live'
+    ) return false;
+
+    messageInFlight.current = sessionId;
+    setMessageAction({ sessionId, status: 'pending', message: 'Sending to the shared session…' });
+    try {
+      const data = await liveWalkApi.sendSessionMessage(auth.token, sessionId, text);
+      const current = snapshotRef.current;
+      if (selectedRequestIdRef.current !== snapshot.request.id || current?.session?.id !== sessionId) return false;
+      applySnapshot({
+        ...current,
+        messages: [...current.messages, data.message],
+        syncedAt: new Date().toISOString(),
+      });
+      setLastSynced(new Date());
+      setConnection('online');
+      setMessageAction({ sessionId, status: 'success', message: 'Message confirmed in the shared session.' });
+      return true;
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 401) auth.expire();
+      else if (snapshotRef.current?.session?.id === sessionId) {
+        setMessageAction({ sessionId, status: 'error', message: reason instanceof Error ? reason.message : 'Message failed. Try again.' });
+      }
+      return false;
+    } finally {
+      if (messageInFlight.current === sessionId) messageInFlight.current = '';
+    }
+  };
+
+  const endWalk = async (sessionId: string) => {
+    const snapshot = snapshotRef.current;
+    if (
+      endInFlight.current
+      || !snapshot
+      || snapshot.request.id !== selectedRequestIdRef.current
+      || snapshot.request.status !== 'live'
+      || snapshot.session?.id !== sessionId
+      || snapshot.session.status !== 'live'
+    ) return;
+    if (!window.confirm('End this live walk now? This closes the shared session for both you and the guide.')) return;
+
+    endInFlight.current = sessionId;
+    setEndAction({ sessionId, status: 'pending', message: 'Ending walk…' });
+    try {
+      const data = await liveWalkApi.endSession(auth.token, sessionId);
+      if (selectedRequestIdRef.current !== snapshot.request.id || snapshotRef.current?.session?.id !== sessionId) return;
+      applySnapshot({
+        request: data.request,
+        session: data.session,
+        messages: data.messages,
+        syncedAt: new Date().toISOString(),
+      });
+      setLastSynced(new Date());
+      setConnection('online');
+      setEndAction({ sessionId, status: 'success', message: 'Walk ended and confirmed by LivelyWalk.' });
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 401) auth.expire();
+      else if (snapshotRef.current?.session?.id === sessionId) {
+        setEndAction({ sessionId, status: 'error', message: reason instanceof Error ? reason.message : 'Could not end the walk. Retry safely.' });
+      }
+    } finally {
+      if (endInFlight.current === sessionId) endInFlight.current = '';
+    }
+  };
+
   return (
     <div className="app-page">
       <header className="topbar">
@@ -229,8 +320,12 @@ function TravelerDashboard() {
                 lastSuccessfulAt={lastSynced}
                 refreshing={syncingActive}
                 cancellation={cancellation}
+                messageState={messageAction}
+                endState={endAction}
                 onRefresh={() => void refreshActive()}
                 onCancel={(request) => void cancel(request)}
+                onSendMessage={sendMessage}
+                onEnd={(sessionId) => void endWalk(sessionId)}
               />
             ) : null}
             {requests.length ? <div className="history-heading"><span>BOOKING HISTORY</span><small>Select a walk to inspect its confirmed state.</small></div> : null}

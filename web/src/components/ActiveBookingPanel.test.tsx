@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { BookingSnapshot, LiveSession, SessionMessage, WalkRequest } from '../types';
 import { ActiveBookingPanel, type CancellationState } from './ActiveBookingPanel';
+import type { SessionActionState } from './SessionPanel';
 
 const now = Date.parse('2026-07-24T10:01:00Z');
 
@@ -55,6 +56,15 @@ const cancellation = (
   message,
 });
 
+const sessionAction = (
+  status: SessionActionState['status'] = 'idle',
+  message = '',
+): SessionActionState => ({
+  sessionId: status === 'idle' ? '' : 'sess_1',
+  status,
+  message,
+});
+
 const snapshot = (
   requestStatus: WalkRequest['status'],
   liveSession: LiveSession | null = null,
@@ -72,8 +82,12 @@ function panel(
     connection?: 'connecting' | 'online' | 'reconnecting';
     cancellationState?: CancellationState;
     refreshing?: boolean;
+    messageState?: SessionActionState;
+    endState?: SessionActionState;
     onRefresh?: () => void;
     onCancel?: (walkRequest: WalkRequest) => void;
+    onSendMessage?: (sessionId: string, text: string) => Promise<boolean>;
+    onEnd?: (sessionId: string) => void;
   } = {},
 ) {
   return (
@@ -83,9 +97,13 @@ function panel(
       lastSuccessfulAt={new Date('2026-07-24T10:00:30Z')}
       refreshing={options.refreshing ?? false}
       cancellation={options.cancellationState ?? cancellation()}
+      messageState={options.messageState ?? sessionAction()}
+      endState={options.endState ?? sessionAction()}
       now={now}
       onRefresh={options.onRefresh ?? vi.fn()}
       onCancel={options.onCancel ?? vi.fn()}
+      onSendMessage={options.onSendMessage ?? vi.fn(async () => true)}
+      onEnd={options.onEnd ?? vi.fn()}
     />
   );
 }
@@ -122,7 +140,7 @@ test('renders the latest guide update and current GPS progress', () => {
   }), [guideMessage])));
 
   expect(screen.getByRole('heading', { name: 'Maya' })).toBeInTheDocument();
-  expect(screen.getByText('I am crossing the bridge now.')).toBeInTheDocument();
+  expect(within(screen.getByLabelText('Session messages')).getByText('I am crossing the bridge now.')).toBeInTheDocument();
   expect(screen.getByText('Live location')).toBeInTheDocument();
   expect(screen.getByText('51.50621, -0.08234')).toBeInTheDocument();
   expect(screen.getByLabelText('Route progress 52 percent').firstElementChild).toHaveStyle({ width: '52%' });
@@ -190,4 +208,81 @@ test('shows cancellation success without another action and exposes error retry'
 
   await userEvent.click(screen.getByRole('button', { name: 'Retry cancellation' }));
   expect(onCancel).toHaveBeenCalledWith(booking.request);
+});
+
+test('sends typed messages and bounded quick instructions only through the live authenticated session', async () => {
+  const onSendMessage = vi.fn(async () => true);
+  const booking = snapshot('live', session('live'), [guideMessage]);
+  render(panel(booking, { onSendMessage }));
+
+  expect(screen.getByText('Live and authenticated')).toBeInTheDocument();
+  expect(within(screen.getByLabelText('Session messages')).getByText('I am crossing the bridge now.')).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Please slow down.' }));
+  expect(onSendMessage).toHaveBeenCalledWith('sess_1', 'Please slow down.');
+
+  await userEvent.type(screen.getByLabelText('Message your guide'), '  I am ready to continue.  ');
+  await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+  expect(onSendMessage).toHaveBeenLastCalledWith('sess_1', 'I am ready to continue.');
+  expect(screen.getByLabelText('Message your guide')).toHaveValue('');
+});
+
+test('keeps a failed typed message available for retry and disables duplicate sends while pending', async () => {
+  const onSendMessage = vi.fn(async () => false);
+  const booking = snapshot('live', session('live'));
+  const view = render(panel(booking, {
+    messageState: sessionAction('error', 'Message failed. Try again.'),
+    onSendMessage,
+  }));
+
+  await userEvent.type(screen.getByLabelText('Message your guide'), 'Please repeat that.');
+  await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+  expect(screen.getByLabelText('Message your guide')).toHaveValue('Please repeat that.');
+  expect(screen.getByText('! Message failed. Try again.')).toBeInTheDocument();
+
+  view.rerender(panel(booking, {
+    messageState: sessionAction('pending', 'Sending…'),
+    onSendMessage,
+  }));
+  expect(screen.getByLabelText('Message your guide')).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Sending…' })).toBeDisabled();
+  expect(screen.getByText('Sending to the shared session…')).toBeInTheDocument();
+});
+
+test('exposes a single end-walk action with pending and retry states', async () => {
+  const onEnd = vi.fn();
+  const booking = snapshot('live', session('live'));
+  const view = render(panel(booking, { onEnd }));
+
+  await userEvent.click(screen.getByRole('button', { name: 'End walk' }));
+  expect(onEnd).toHaveBeenCalledOnce();
+  expect(onEnd).toHaveBeenCalledWith('sess_1');
+
+  view.rerender(panel(booking, {
+    endState: sessionAction('pending', 'Ending walk…'),
+    onEnd,
+  }));
+  expect(screen.getByRole('button', { name: 'End pending' })).toBeDisabled();
+  expect(screen.getByText('Ending walk…')).toBeInTheDocument();
+
+  view.rerender(panel(booking, {
+    endState: sessionAction('error', 'Could not end the walk. Retry safely.'),
+    onEnd,
+  }));
+  await userEvent.click(screen.getByRole('button', { name: 'Retry end walk' }));
+  expect(onEnd).toHaveBeenCalledTimes(2);
+});
+
+test('renders a truthful completed-session summary from confirmed booking data', () => {
+  render(panel(snapshot('completed', session('ended'))));
+
+  expect(screen.getByRole('heading', { name: 'Your walk is complete' })).toBeInTheDocument();
+  const summary = screen.getByRole('heading', { name: 'Your walk is complete' }).closest('section');
+  expect(summary).not.toBeNull();
+  expect(within(summary!).getByText('Maya')).toBeInTheDocument();
+  expect(within(summary!).getByText('1 min')).toBeInTheDocument();
+  expect(within(summary!).getByText('45 min')).toBeInTheDocument();
+  expect(within(summary!).getByText('$38')).toBeInTheDocument();
+  expect(within(summary!).getByText(/original booking estimate, not a receipt or charged total/i)).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /end walk/i })).not.toBeInTheDocument();
 });

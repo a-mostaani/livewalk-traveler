@@ -144,9 +144,9 @@ The production web client lives under `web/` and uses the same LiveWalk marketpl
 ```bash
 npm run web:typecheck
 npm run web:test
-MAPBOX_TOKEN_WEB=... VITE_MAPBOX_TOKEN="$MAPBOX_TOKEN_WEB" npm run web:build
+MAPBOX_TOKEN_WEB=... npm run web:build
 ```
 
 Publish the complete generated `dist-web/` directory as one static artifact. Do not publish the repository root or upload `index.html` separately; every `/assets/*` reference in the generated HTML must ship in the same version.
 
-The Mapbox public browser token is injected only at build time through `VITE_MAPBOX_TOKEN`; no real token belongs in tracked source. Browser authentication uses `sessionStorage`, validates restoration through `/api/auth/me`, calls `/api/auth/logout` on sign-out, and clears the local token on sign-out or an unauthorized response. Quotes must come from `/api/requests/estimate` and remain tied to the exact request draft before `/api/requests` can submit it.
+The Mapbox public browser token is injected only at build time from `MAPBOX_TOKEN_WEB` into Vite's public map-key input; production builds fail if it is missing, and no real token belongs in tracked source. Browser authentication uses `sessionStorage`, validates restoration through `/api/auth/me`, calls `/api/auth/logout` on sign-out, and clears the local token on sign-out or an unauthorized response. Quotes must come from `/api/requests/estimate` and remain tied to the exact request draft before `/api/requests` can submit it.

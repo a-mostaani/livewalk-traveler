@@ -49,11 +49,23 @@ function createAppConfig(config, env = process.env) {
     scheme: 'livewalk',
     userInterfaceStyle: 'light',
     newArchEnabled: false,
-    plugins: ['expo-dev-client'],
+    plugins: [
+      'expo-dev-client',
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/splash.png',
+          resizeMode: 'contain',
+          backgroundColor: '#090F1E',
+        },
+      ],
+    ],
+    icon: './assets/icon.png',
     android: {
       package: 'com.livewalk.traveler',
       adaptiveIcon: {
-        backgroundColor: '#061826',
+        foregroundImage: './assets/adaptive-icon.png',
+        backgroundColor: '#090F1E',
       },
     },
     ios: {

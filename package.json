@@ -36,6 +36,7 @@
     "expo-dev-client": "~5.2.4",
     "expo-font": "~13.3.2",
     "expo-secure-store": "~14.2.4",
+    "expo-splash-screen": "~0.30.10",
     "expo-status-bar": "~2.2.3",
     "livekit-client": "^2.20.2",
     "react": "19.0.0",

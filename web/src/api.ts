@@ -126,6 +126,14 @@ export class LiveWalkApi {
     }, token);
   }
 
+  getLiveKitToken(token: string, id: string) {
+    return this.request<{ ok: true; token: string; room: string; identity: string; canPublish: false; expiresIn: number }>(
+      `/api/sessions/${encodeURIComponent(id)}/livekit-token`,
+      { method: 'POST' },
+      token,
+    );
+  }
+
   endSession(token: string, id: string) {
     return this.request<{ ok: true; request: WalkRequest; session: LiveSession; messages: SessionMessage[] }>(`/api/sessions/${encodeURIComponent(id)}/end`, {
       method: 'POST',
@@ -134,4 +142,4 @@ export class LiveWalkApi {
 }
 
 export const liveWalkApi = new LiveWalkApi();
-export type LiveWalkApiSurface = Pick<LiveWalkApi, 'health' | 'register' | 'login' | 'me' | 'logout' | 'estimate' | 'createRequest' | 'listRequests' | 'getRequest' | 'cancelRequest' | 'getSessionStatus' | 'sendSessionMessage' | 'endSession'>;
+export type LiveWalkApiSurface = Pick<LiveWalkApi, 'health' | 'register' | 'login' | 'me' | 'logout' | 'estimate' | 'createRequest' | 'listRequests' | 'getRequest' | 'cancelRequest' | 'getSessionStatus' | 'sendSessionMessage' | 'getLiveKitToken' | 'endSession'>;

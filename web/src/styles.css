@@ -240,6 +240,24 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .progress-track { height: 5px; margin: 12px 0 7px; overflow: hidden; border-radius: 999px; background: #1a304c; }
 .progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), var(--violet)); }
 .gps-card > small { color: #7187a3; font-size: 8px; }
+.guide-media-panel { margin-top: 14px; padding: 15px; border: 1px solid rgba(33,212,253,.2); border-radius: 15px; background: linear-gradient(145deg, rgba(33,212,253,.06), rgba(7,18,35,.72)); }
+.guide-media-panel.state-reconnecting { border-color: rgba(255,180,84,.34); }
+.guide-media-panel.state-error { border-color: rgba(255,107,122,.34); }
+.guide-media-panel.state-ended { border-color: rgba(62,230,174,.24); }
+.guide-media-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.guide-media-heading h4 { margin: 5px 0 0; color: #e2eefc; font-size: 13px; }
+.media-state { max-width: 48%; color: #8da4c0; text-align: right; font-size: 8px; font-weight: 750; line-height: 1.45; }
+.state-connected .media-state { color: var(--success); }
+.state-reconnecting .media-state { color: #ffc478; }
+.state-error .media-state { color: #ff9aa5; }
+.guide-video-stage { position: relative; min-height: 220px; margin-top: 13px; overflow: hidden; border: 1px solid rgba(145,176,216,.15); border-radius: 13px; background: #030b15; }
+.guide-video-stage video { width: 100%; min-height: 220px; display: block; object-fit: cover; background: #030b15; }
+.guide-video-placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; color: #8499b3; text-align: center; background: radial-gradient(circle at 50% 35%, rgba(33,212,253,.09), transparent 48%); }
+.guide-video-placeholder span { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid rgba(33,212,253,.28); border-radius: 50%; color: var(--cyan); font-size: 18px; }
+.guide-video-placeholder strong { max-width: 280px; font-size: 9px; line-height: 1.5; }
+.guide-media-panel audio { display: none; }
+.audio-control { min-height: 37px; margin-top: 10px; padding: 0 13px; border: 1px solid rgba(33,212,253,.23); border-radius: 10px; color: #b9eaf6; background: rgba(33,212,253,.08); font-size: 9px; font-weight: 800; }
+.audio-control:disabled { color: var(--success); border-color: rgba(62,230,174,.2); background: rgba(62,230,174,.07); opacity: 1; }
 .session-panel, .completion-summary { margin-top: 14px; padding: 15px; border: 1px solid var(--line); border-radius: 15px; background: rgba(7,18,35,.62); }
 .session-panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 .session-panel-heading h4 { margin: 5px 0 0; color: #e2eefc; font-size: 13px; }
@@ -403,6 +421,9 @@ footer p { margin: 7px 0 0; }
   .review-route, .review-facts, .review-quote dl, .review-actions { grid-template-columns: 1fr; }
   .endpoint-map figcaption { align-items: flex-start; flex-direction: column; }
   .session-panel-heading { flex-direction: column; }
+  .guide-media-heading { flex-direction: column; }
+  .media-state { max-width: none; text-align: left; }
+  .guide-video-stage, .guide-video-stage video { min-height: 190px; }
   .session-message.role-traveler { margin-left: 14px; }
   .session-message.role-guide { margin-right: 14px; }
   .session-composer form > div, .completion-facts, .completion-route { grid-template-columns: 1fr; }

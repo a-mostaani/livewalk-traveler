@@ -2,6 +2,7 @@ import { latestGuideUpdate, locationFreshness, presentLifecycle, type Connection
 import { cancellableStatuses } from '../requestModel';
 import type { BookingSnapshot, WalkRequest } from '../types';
 import { CompletionSummary } from './CompletionSummary';
+import { GuideMediaPanel } from './GuideMediaPanel';
 import { SessionPanel, type SessionActionState } from './SessionPanel';
 
 const rail = ['Plan', 'Match', 'Ready', 'Live', 'Complete'];
@@ -25,6 +26,7 @@ export function ActiveBookingPanel({
   onCancel,
   onSendMessage,
   onEnd,
+  authToken,
 }: {
   snapshot: BookingSnapshot;
   connection: ConnectionStatus;
@@ -38,6 +40,7 @@ export function ActiveBookingPanel({
   onCancel: (request: WalkRequest) => void;
   onSendMessage: (sessionId: string, text: string) => Promise<boolean>;
   onEnd: (sessionId: string) => void;
+  authToken: string;
 }) {
   const lifecycle = presentLifecycle(snapshot.request, snapshot.session);
   const freshness = locationFreshness(snapshot.session?.location ?? null, now);
@@ -124,6 +127,7 @@ export function ActiveBookingPanel({
         </section>
       </div>
 
+      {snapshot.session ? <GuideMediaPanel session={snapshot.session} authToken={authToken} /> : null}
       <CompletionSummary snapshot={snapshot} />
       <SessionPanel snapshot={snapshot} messageState={messageState} onSendMessage={onSendMessage} />
 

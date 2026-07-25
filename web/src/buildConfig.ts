@@ -7,3 +7,11 @@ export function resolveMapboxBuildToken(mode: string, env: BuildEnvironment) {
   }
   return token;
 }
+
+export function resolveLiveKitBuildUrl(mode: string, env: BuildEnvironment) {
+  const url = env.LIVEKIT_WS_URL?.trim() || env.VITE_LIVEKIT_WS_URL?.trim() || '';
+  if (mode === 'production' && !url) {
+    throw new Error('Production web build requires LIVEKIT_WS_URL.');
+  }
+  return url;
+}

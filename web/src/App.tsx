@@ -327,6 +327,7 @@ function TravelerDashboard() {
                 onCancel={(request) => void cancel(request)}
                 onSendMessage={sendMessage}
                 onEnd={(sessionId) => void endWalk(sessionId)}
+                authToken={auth.token}
               />
             ) : null}
             {requests.length ? <div className="history-heading"><span>BOOKING HISTORY</span><small>Select a walk to inspect its confirmed state.</small></div> : null}
@@ -349,7 +350,7 @@ function TravelerDashboard() {
         </div>
         <AndroidDownload />
       </main>
-      <footer><span>EXPERIENCE EVERYWHERE LIVE</span><p>Traveler v1 · Quotes and booking state are live · Payments, voice and video are outside this release.</p></footer>
+      <footer><span>EXPERIENCE EVERYWHERE LIVE</span><p>Traveler v1 · Quotes, booking state and subscribe-only Guide media are live · Payments are outside this release.</p></footer>
     </div>
   );
 }

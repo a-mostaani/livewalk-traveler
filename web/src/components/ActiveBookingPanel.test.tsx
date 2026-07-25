@@ -104,6 +104,7 @@ function panel(
       onCancel={options.onCancel ?? vi.fn()}
       onSendMessage={options.onSendMessage ?? vi.fn(async () => true)}
       onEnd={options.onEnd ?? vi.fn()}
+      authToken="traveler-session-token"
     />
   );
 }

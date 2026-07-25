@@ -89,6 +89,29 @@ test('API adapter sends authenticated session messages with the server-owned sen
   expect(JSON.parse(String(init?.body))).toEqual({ text: 'Please slow down.' });
 });
 
+test('API adapter mints the authenticated subscribe-only Traveler media token', async () => {
+  const fetcher = vi.fn(async () => new Response(JSON.stringify({
+    ok: true,
+    token: 'livekit-jwt',
+    room: 'sess_1',
+    identity: 'traveler_1',
+    canPublish: false,
+    expiresIn: 600,
+  }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+  const client = new LiveWalkApi('https://api.example.test', fetcher);
+
+  await expect(client.getLiveKitToken('session-token', 'sess_1')).resolves.toMatchObject({
+    token: 'livekit-jwt',
+    room: 'sess_1',
+    canPublish: false,
+  });
+
+  const [url, init] = vi.mocked(fetcher).mock.calls[0];
+  expect(url).toBe('https://api.example.test/api/sessions/sess_1/livekit-token');
+  expect(init?.method).toBe('POST');
+  expect(new Headers(init?.headers).get('authorization')).toBe('Bearer session-token');
+});
+
 test('API adapter ends a session through the authenticated idempotent endpoint', async () => {
   const fetcher = vi.fn(async () => new Response(JSON.stringify({
     ok: true,

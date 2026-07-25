@@ -21,7 +21,8 @@
     "web:dev": "vite --config web/vite.config.ts",
     "web:typecheck": "tsc --noEmit -p web/tsconfig.json",
     "web:test": "vitest run --config web/vite.config.ts",
-    "web:build": "vite build --config web/vite.config.ts"
+    "web:build": "vite build --config web/vite.config.ts && node scripts/check-web-livekit-build.mjs",
+    "web:check-livekit": "node scripts/check-web-livekit-build.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

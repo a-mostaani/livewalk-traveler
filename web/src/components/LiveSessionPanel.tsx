@@ -159,47 +159,55 @@ export function LiveSessionPanel({
         <button type="button" className="live-session-close" onClick={onClose} aria-label="Close live session">✕</button>
       </div>
       {error ? <div className="message error-message" role="alert">{error}</div> : null}
-      <div className="live-video-wrapper">
-        {connectionProps.connect && connectionProps.token ? (
-          <LiveKitRoom
-            serverUrl={LIVEKIT_WS_URL}
-            token={connectionProps.token}
-            connect={connectionProps.connect}
-            video={connectionProps.video}
-            audio={connectionProps.audio}
-            className="live-video-room"
-          >
-            <RemoteGuideVideo />
-          </LiveKitRoom>
-        ) : (
-          <div className="live-video-placeholder">
-            <span className="live-dot" />
-            {sessionReady ? 'Connecting to the guide’s camera…' : 'Video starts once the guide begins the live session.'}
-          </div>
-        )}
-      </div>
-      <div className="live-session-grid">
-        <div className="live-map-card">
-          <h4>Map and GPS</h4>
-          {mapImageUrl ? <img src={mapImageUrl} alt="Guide's live location" className="live-map-image" /> : <div className="live-map-waiting">Waiting for guide GPS</div>}
+      {/* TICKET-3: video and chat used to stack full-width (video on top,
+          chat below), so on desktop the video alone could fill the viewport
+          and push the message input off-screen - travelers couldn't watch
+          and type at once. Side-by-side here keeps both onscreen together;
+          the existing 980px breakpoint below collapses this back to a
+          single column, matching the original stacked layout on mobile. */}
+      <div className="live-session-body">
+        <div className="live-video-wrapper">
+          {connectionProps.connect && connectionProps.token ? (
+            <LiveKitRoom
+              serverUrl={LIVEKIT_WS_URL}
+              token={connectionProps.token}
+              connect={connectionProps.connect}
+              video={connectionProps.video}
+              audio={connectionProps.audio}
+              className="live-video-room"
+            >
+              <RemoteGuideVideo />
+            </LiveKitRoom>
+          ) : (
+            <div className="live-video-placeholder">
+              <span className="live-dot" />
+              {sessionReady ? 'Connecting to the guide’s camera…' : 'Video starts once the guide begins the live session.'}
+            </div>
+          )}
         </div>
-        <div className="live-messages-card">
-          <h4>Shared messages</h4>
-          <div className="live-messages-list">
-            {messages.length === 0
-              ? <p className="live-messages-empty">No shared messages yet.</p>
-              : messages.map((message) => <div key={message.id} className="live-message"><strong>{message.senderName}</strong><span>{message.text}</span></div>)}
+        <div className="live-session-side">
+          <div className="live-messages-card">
+            <h4>Shared messages</h4>
+            <div className="live-messages-list">
+              {messages.length === 0
+                ? <p className="live-messages-empty">No shared messages yet.</p>
+                : messages.map((message) => <div key={message.id} className="live-message"><strong>{message.senderName}</strong><span>{message.text}</span></div>)}
+            </div>
+            <form className="live-message-form" onSubmit={submitMessage}>
+              <input
+                value={messageText}
+                onChange={(event) => setMessageText(event.target.value)}
+                placeholder="Send a message to your guide"
+                disabled={!sessionReady || sending}
+                aria-label="Message to guide"
+              />
+              <button type="submit" className="button button-secondary" disabled={!sessionReady || sending || !messageText.trim()}>Send</button>
+            </form>
           </div>
-          <form className="live-message-form" onSubmit={submitMessage}>
-            <input
-              value={messageText}
-              onChange={(event) => setMessageText(event.target.value)}
-              placeholder="Send a message to your guide"
-              disabled={!sessionReady || sending}
-              aria-label="Message to guide"
-            />
-            <button type="submit" className="button button-secondary" disabled={!sessionReady || sending || !messageText.trim()}>Send</button>
-          </form>
+          <div className="live-map-card">
+            <h4>Map and GPS</h4>
+            {mapImageUrl ? <img src={mapImageUrl} alt="Guide's live location" className="live-map-image" /> : <div className="live-map-waiting">Waiting for guide GPS</div>}
+          </div>
         </div>
       </div>
       <div className="live-session-controls">

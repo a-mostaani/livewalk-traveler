@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "build:test": "node scripts/build-test.mjs",
     "test": "node --test tests/*.test.js",
     "test:unit": "vitest run --dir tests .test.ts",
     "export:web": "expo export --platform web",

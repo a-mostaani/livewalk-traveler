@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, colors } from '../components/Primitives';
 import { LiveGuideMap, LiveProgressRail } from '../components/TravelVisuals';
 import { TravelerVideoView } from '../components/TravelerVideoView';
+import { ChatComposer } from '../components/ChatComposer';
 import { MAPBOX_TOKEN } from '../config';
 import { LiveSession, MarketplaceRequest, SessionMessage } from '../api';
 import { useRoutePolyline } from '../hooks/useRoutePolyline';
@@ -55,11 +56,6 @@ export function LiveWalkScreen({
       Alert.alert('Message not sent', 'Wait for the guide to start the live session first.');
     }
   };
-
-  const sendQuickMessage = () => sendSessionEvent(
-    'Traveler message: Please slow down near the market.',
-    'Message sent to the guide.'
-  );
 
   const requestStopHere = () => sendSessionEvent(
     '🚩 STOP HERE requested by traveler.',
@@ -115,7 +111,6 @@ export function LiveWalkScreen({
             <Ionicons name={talking ? 'mic' : 'mic-outline'} size={18} color={talking ? colors.onAction : (!sessionReady ? colors.disabledText : colors.textPrimary)} />
             <Text style={[styles.holdButtonText, !sessionReady && styles.holdButtonTextDisabled, talking && styles.holdButtonTextActive]}>{talking ? 'Talking…' : 'Hold to talk'}</Text>
           </TouchableOpacity>
-          <Button label="Message" icon="chatbubble-ellipses" variant="secondary" onPress={sendQuickMessage} disabled={!sessionReady} style={styles.controlButton} />
           <Button label="Stop here" icon="hand-left" variant="secondary" onPress={requestStopHere} disabled={!sessionReady} style={styles.controlButton} />
           <Button label="Change route" icon="git-branch" variant="secondary" onPress={() => sendSessionEvent('Traveler requested a route change: quieter street.', 'Route-change request sent to the guide.')} disabled={!sessionReady} style={styles.controlButton} />
         </View>
@@ -152,13 +147,14 @@ export function LiveWalkScreen({
           <Ionicons name="chatbubbles" size={25} color={colors.accentWarm} />
         </View>
         <View style={styles.captionList}>
-          {(messages.length ? messages : [{ id: 'empty', text: 'No shared messages yet. Tap Message after joining.', senderName: 'LiveWalk', senderRole: 'system', sessionId: '', createdAt: '' }]).map((message) => (
+          {(messages.length ? messages : [{ id: 'empty', text: 'No messages yet. Type below to write to your guide.', senderName: 'LiveWalk', senderRole: 'system', sessionId: '', createdAt: '' }]).map((message) => (
             <View key={message.id} style={styles.captionBubble}>
               <Text style={styles.messageFrom}>{message.senderName}</Text>
               <Text style={styles.captionText}>{message.text}</Text>
             </View>
           ))}
         </View>
+        <ChatComposer sessionReady={sessionReady} placeholder="Message your guide" onSend={onSendMessage} />
       </Card>
       <Card style={styles.panel}>
         <View style={styles.panelHeader}>

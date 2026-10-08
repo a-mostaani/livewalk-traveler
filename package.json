@@ -9,6 +9,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.js",
+    "test:unit": "vitest run --dir tests .test.ts",
     "export:web": "expo export --platform web",
     "ios": "expo run:ios",
     "check:config": "expo config --type public",

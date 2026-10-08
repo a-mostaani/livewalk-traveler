@@ -33,7 +33,7 @@ function useLogSubscribedVideoQuality(publication: unknown) {
       const width = dimensions?.width ?? settings?.width;
       const height = dimensions?.height ?? settings?.height;
       console.log(
-        `[LiveWalk] guide video: received ${width}x${height} -> ${describeSimulcastLayer(width, height)}` +
+        `[LivelyWalk] guide video: received ${width}x${height} -> ${describeSimulcastLayer(width, height)}` +
         ` | requested max quality: ${publication.videoQuality} | frameRate: ${settings?.frameRate ?? 'unknown'}`,
       );
     };

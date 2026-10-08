@@ -55,7 +55,7 @@ export function ReviewScreen({
                 <Text style={styles.priceValue}>${estimate.guideFee}</Text>
               </View>
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>LiveWalk service</Text>
+                <Text style={styles.priceLabel}>LivelyWalk service</Text>
                 <Text style={styles.priceValue}>${estimate.platformFee}</Text>
               </View>
               <View style={[styles.priceRow, styles.totalRow]}>

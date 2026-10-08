@@ -147,7 +147,7 @@ export function LiveWalkScreen({
           <Ionicons name="chatbubbles" size={25} color={colors.accentWarm} />
         </View>
         <View style={styles.captionList}>
-          {(messages.length ? messages : [{ id: 'empty', text: 'No messages yet. Type below to write to your guide.', senderName: 'LiveWalk', senderRole: 'system', sessionId: '', createdAt: '' }]).map((message) => (
+          {(messages.length ? messages : [{ id: 'empty', text: 'No messages yet. Type below to write to your guide.', senderName: 'LivelyWalk', senderRole: 'system', sessionId: '', createdAt: '' }]).map((message) => (
             <View key={message.id} style={styles.captionBubble}>
               <Text style={styles.messageFrom}>{message.senderName}</Text>
               <Text style={styles.captionText}>{message.text}</Text>

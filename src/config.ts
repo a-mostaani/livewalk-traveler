@@ -14,7 +14,7 @@ function getLiveWalkExtra(): LiveWalkExtra {
 
 function cleanApiBaseUrl(value: string | undefined): string {
   const cleaned = value?.trim().replace(/\/+$/, '');
-  if (!cleaned) throw new Error('LiveWalk API base URL is missing from Expo config.');
+  if (!cleaned) throw new Error('LivelyWalk API base URL is missing from Expo config.');
   return cleaned;
 }
 

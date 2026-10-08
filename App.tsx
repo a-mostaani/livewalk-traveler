@@ -141,8 +141,7 @@ function TravelerApp() {
               <Ionicons name="navigate" size={16} color={colors.onDark} />
             </Pressable>
             <View style={styles.headerCopy}>
-              <Text style={styles.headerTitle}>LiveWalk Traveler MVP</Text>
-              <Text style={styles.headerSub}>Shared backend booking cycle</Text>
+              <Text style={styles.headerTitle}>LivelyWalk Traveler</Text>
             </View>
             <View style={[styles.statusPill, apiOnline ? styles.statusPillOnline : styles.statusPillOffline]}>
               <View style={[styles.statusDot, apiOnline && styles.statusDotOnline]} />
@@ -240,7 +239,6 @@ const styles = StyleSheet.create({
   signOut: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   headerCopy: { flex: 1, minWidth: 0 },
   headerTitle: { color: colors.textPrimary, fontWeight: '900', fontSize: 16 },
-  headerSub: { color: colors.textSecondary, fontWeight: '700', fontSize: 12, marginTop: 1 },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: colors.border },
   statusPillOnline: { backgroundColor: colors.surfaceSuccess },
   statusPillOffline: { backgroundColor: colors.surfaceWarning },

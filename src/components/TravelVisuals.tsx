@@ -11,7 +11,7 @@ export function BrandMark() {
         <Ionicons name="navigate" size={20} color={colors.onDark} />
       </View>
       <View>
-        <Text style={styles.brand}>LiveWalk</Text>
+        <Text style={styles.brand}>LivelyWalk</Text>
         <Text style={styles.brandSub}>Traveler</Text>
       </View>
     </View>

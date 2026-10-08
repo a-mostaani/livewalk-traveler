@@ -237,7 +237,7 @@ export function useSession({ enabled, localRequest, currentScreen, onAccepted }:
     setApiNote('Cancelling your request…');
     try {
       const data = await cancelWalkRequest(requestId);
-      if (data.request.status !== 'cancelled') throw new Error('LiveWalk could not confirm the cancellation. Please retry.');
+      if (data.request.status !== 'cancelled') throw new Error('LivelyWalk could not confirm the cancellation. Please retry.');
       setRequest(data.request);
       setRequestHistory((history) => history.map((item) => item.id === requestId ? data.request : item));
       setLiveSession(data.session ?? undefined);

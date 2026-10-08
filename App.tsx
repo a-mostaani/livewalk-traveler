@@ -10,6 +10,7 @@ import { stageLabels, stageOrder, stageState, canOpenStage } from './src/flow';
 import { useSession } from './src/hooks/useSession';
 import { API_BASE } from './src/api';
 import { AuthProvider, useAuth } from './src/auth/AuthContext';
+import { signOutPrompt } from './src/auth/signOut';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ConfirmedScreen } from './src/screens/ConfirmedScreen';
 import { LiveWalkScreen } from './src/screens/LiveWalkScreen';
@@ -21,7 +22,7 @@ import { SummaryScreen } from './src/screens/SummaryScreen';
 import { hasRouteCoordinates, Screen, WalkRequest } from './src/types';
 
 function TravelerApp() {
-  const { user, busy: authBusy } = useAuth();
+  const { user, busy: authBusy, logout } = useAuth();
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [request, setRequest] = useState<WalkRequest>(defaultRequest);
   const scrollRef = useRef<ScrollView>(null);
@@ -117,6 +118,14 @@ function TravelerApp() {
     await session.sendMessage(text);
   };
 
+  const confirmSignOut = () => {
+    const prompt = signOutPrompt(remoteRequest?.status === 'live');
+    Alert.alert(prompt.title, prompt.message, [
+      { text: 'Stay signed in', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => { void logout(); } },
+    ]);
+  };
+
   const resetLocal = () => {
     session.reset();
     navigateTo('request');
@@ -139,6 +148,11 @@ function TravelerApp() {
               <View style={[styles.statusDot, apiOnline && styles.statusDotOnline]} />
               <Text style={styles.statusText}>{apiOnline ? 'Live' : 'Sync'}</Text>
             </View>
+            {user ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Sign out" hitSlop={10} onPress={confirmSignOut} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
+                <Ionicons name="log-out-outline" size={20} color={colors.textPrimary} />
+              </Pressable>
+            ) : null}
           </View>
           <View style={styles.headerMeta}>
             <Text style={styles.backendLine} numberOfLines={1}>{user ? `${user.name} • ${apiNote}` : apiNote} • {API_BASE.replace('https://', '')}</Text>
@@ -223,6 +237,7 @@ const styles = StyleSheet.create({
   appHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 6 },
   logoMini: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.78 },
+  signOut: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   headerCopy: { flex: 1, minWidth: 0 },
   headerTitle: { color: colors.textPrimary, fontWeight: '900', fontSize: 16 },
   headerSub: { color: colors.textSecondary, fontWeight: '700', fontSize: 12, marginTop: 1 },

@@ -5,6 +5,7 @@ import { Button, Card, colors } from '../components/Primitives';
 import { LiveGuideMap, LiveProgressRail } from '../components/TravelVisuals';
 import { TravelerVideoView } from '../components/TravelerVideoView';
 import { ChatComposer } from '../components/ChatComposer';
+import { messageSide } from '../chat/composer';
 import { MAPBOX_TOKEN } from '../config';
 import { LiveSession, MarketplaceRequest, SessionMessage } from '../api';
 import { useRoutePolyline } from '../hooks/useRoutePolyline';
@@ -148,7 +149,7 @@ export function LiveWalkScreen({
         </View>
         <View style={styles.captionList}>
           {(messages.length ? messages : [{ id: 'empty', text: 'No messages yet. Type below to write to your guide.', senderName: 'LivelyWalk', senderRole: 'system', sessionId: '', createdAt: '' }]).map((message) => (
-            <View key={message.id} style={styles.captionBubble}>
+            <View key={message.id} style={[styles.captionBubble, messageSide(message.senderRole, 'traveler') === 'mine' && styles.captionBubbleMine, messageSide(message.senderRole, 'traveler') === 'system' && styles.captionBubbleSystem]}>
               <Text style={styles.messageFrom}>{message.senderName}</Text>
               <Text style={styles.captionText}>{message.text}</Text>
             </View>
@@ -290,7 +291,9 @@ const styles = StyleSheet.create({
   metricLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.3 },
   metricValue: { color: colors.textPrimary, fontWeight: '900', marginTop: 4, fontSize: 12 },
   captionList: { gap: 8 },
-  captionBubble: { backgroundColor: colors.surfaceInfo, borderRadius: 16, padding: 12 },
+  captionBubble: { backgroundColor: colors.surfaceInfo, borderRadius: 16, padding: 12, alignSelf: 'flex-start', maxWidth: '92%' },
+  captionBubbleMine: { alignSelf: 'flex-end', backgroundColor: colors.actionSoft },
+  captionBubbleSystem: { alignSelf: 'center', backgroundColor: 'transparent', paddingVertical: 4 },
   captionText: { color: colors.textPrimary, lineHeight: 20, fontWeight: '700' },
   messageFrom: { color: colors.accentWarm, fontWeight: '900', marginBottom: 3, fontSize: 12 },
 });
